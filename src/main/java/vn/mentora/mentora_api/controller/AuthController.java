@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import vn.mentora.mentora_api.domain.User;
 import vn.mentora.mentora_api.domain.request.ReqLoginDTO;
 import vn.mentora.mentora_api.domain.request.ReqRegisterMenteeDTO;
+import vn.mentora.mentora_api.domain.request.ReqRegisterMentorDTO;
 import vn.mentora.mentora_api.domain.request.ReqVerifyOtpDTO;
 import vn.mentora.mentora_api.domain.response.ResLoginDTO;
 import vn.mentora.mentora_api.service.AuthService;
@@ -191,6 +192,14 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                 .build();
+    }
+
+    @PostMapping("/register/mentor")
+    @ApiMessage("Đăng ký Mentor thành công, kiểm tra email để xác thực!")
+    public ResponseEntity<Void> registerMentor(
+            @Valid @RequestBody ReqRegisterMentorDTO dto) throws IdInvalidException {
+        this.authService.registerMentor(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(null);
     }
 
 }
