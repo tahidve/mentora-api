@@ -31,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SecurityConfiguration {
 
-    // Dùng HS512 — sau này SecurityUtil sẽ khai báo cùng hằng số này
     private static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
 
     @Value("${app.jwt.base64-secret}")
