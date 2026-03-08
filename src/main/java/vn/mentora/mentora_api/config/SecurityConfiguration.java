@@ -7,7 +7,9 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -79,7 +81,8 @@ public class SecurityConfiguration {
             CustomAuthenticationEntryPoint customEntryPoint) throws Exception {
 
         String[] whiteList = {
-                "/"
+                "/",
+                "/api/v1/auth"
                 // "/test"
         };
 
@@ -105,6 +108,12 @@ public class SecurityConfiguration {
         byte[] keyBytes = Base64.from(this.jwtKey).decode();
         return new SecretKeySpec(keyBytes, 0, keyBytes.length,
                 JWT_ALGORITHM.getName());
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
 }
