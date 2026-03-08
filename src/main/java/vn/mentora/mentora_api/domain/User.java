@@ -51,6 +51,8 @@ public class User {
 
     private String otp;
     private Instant otpExpiration;
+
+    @Column(columnDefinition = "TEXT") // JWT token dài ~500+ ký tự, vượt VARCHAR(255)
     private String refreshToken;
 
     // Phân biệt "email đã verify" khỏi "account status"
