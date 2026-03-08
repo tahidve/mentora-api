@@ -18,9 +18,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
 
+import com.nimbusds.jose.util.Base64;
+
 import vn.mentora.mentora_api.domain.User;
+import vn.mentora.mentora_api.domain.response.ResLoginDTO;
 import vn.mentora.mentora_api.repository.UserRepository;
 
 @Service
@@ -46,7 +50,7 @@ public class SecurityUtil {
     }
 
     public String createAccessToken(String email, String role,
-            User user) {
+            ResLoginDTO.UserLogin userLogin) {
 
         Instant now = Instant.now();
         Instant validity = now.plus(this.accessTokenExpiration, ChronoUnit.SECONDS);
@@ -56,9 +60,7 @@ public class SecurityUtil {
                 .expiresAt(validity)
                 .subject(email)
                 .claim("role", role)
-                // TODO
-                // Protect password sau khi add DTOs
-                .claim("user", user)
+                .claim("user", userLogin)
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
@@ -67,7 +69,7 @@ public class SecurityUtil {
     }
 
     public String createRefreshToken(String email,
-            User user) {
+            ResLoginDTO.UserLogin userLogin) {
         Instant now = Instant.now();
         Instant validity = now.plus(this.refreshTokenExpiration, ChronoUnit.SECONDS);
 
@@ -75,9 +77,7 @@ public class SecurityUtil {
                 .issuedAt(now)
                 .expiresAt(validity)
                 .subject(email)
-                // TODO
-                // Protect password sau khi add DTOs
-                .claim("user", user)
+                .claim("user", userLogin)
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
@@ -113,6 +113,20 @@ public class SecurityUtil {
         }
         Optional<User> user = userRepository.findByEmail(email.get());
         return user.map(User::getUserId).orElse(null);
+    }
+
+    private SecretKey getSecretKey() {
+        byte[] keyBytes = Base64.from(this.jwtKey).decode();
+        return new SecretKeySpec(keyBytes, 0, keyBytes.length,
+                JWT_ALGORITHM.getName());
+    }
+
+    public Jwt checkValidRefreshToken(String token) {
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
+                .withSecretKey(getSecretKey())
+                .macAlgorithm(JWT_ALGORITHM)
+                .build();
+        return jwtDecoder.decode(token);
     }
 
 }

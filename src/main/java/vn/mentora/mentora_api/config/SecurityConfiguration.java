@@ -110,10 +110,4 @@ public class SecurityConfiguration {
                 JWT_ALGORITHM.getName());
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
 }
