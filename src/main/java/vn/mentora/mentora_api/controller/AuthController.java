@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import vn.mentora.mentora_api.domain.request.ReqRegisterMenteeDTO;
+import vn.mentora.mentora_api.domain.request.ReqVerifyOtpDTO;
 import vn.mentora.mentora_api.service.AuthService;
 import vn.mentora.mentora_api.util.annotation.ApiMessage;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
@@ -29,6 +30,13 @@ public class AuthController {
     public ResponseEntity<Void> registerMentee(@Valid @RequestBody ReqRegisterMenteeDTO dto) throws IdInvalidException {
         this.authService.registerMentee(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(null);
+    }
+
+    @PostMapping("/verify-otp")
+    @ApiMessage("Xác thực OTP thành công!")
+    public ResponseEntity<Void> verifyOtp(@RequestBody ReqVerifyOtpDTO dto) throws IdInvalidException {
+        this.authService.verifyOtp(dto);
+        return ResponseEntity.ok().body(null);
     }
 
 }

@@ -52,6 +52,11 @@ public class User {
     private String otp;
     private Instant otpExpiration;
     private String refreshToken;
+
+    // Phân biệt "email đã verify" khỏi "account status"
+    // MENTEE: verify OTP → emailVerified=true + status=ACTIVE
+    // MENTOR: verify OTP → emailVerified=true + status=PENDING (chờ Admin)
+    private boolean emailVerified = false;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;

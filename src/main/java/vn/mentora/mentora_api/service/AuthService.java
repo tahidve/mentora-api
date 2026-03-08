@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import vn.mentora.mentora_api.domain.Mentee;
 import vn.mentora.mentora_api.domain.User;
 import vn.mentora.mentora_api.domain.request.ReqRegisterMenteeDTO;
+import vn.mentora.mentora_api.domain.request.ReqVerifyOtpDTO;
 import vn.mentora.mentora_api.repository.MenteeRepository;
 import vn.mentora.mentora_api.repository.UserRepository;
 import vn.mentora.mentora_api.util.OtpUtil;
@@ -66,4 +67,37 @@ public class AuthService {
         return savedUser;
 
     }
+
+    public User verifyOtp(ReqVerifyOtpDTO dto) throws IdInvalidException {
+
+        User user = this.userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new IdInvalidException("Email không tồn tại!"));
+
+        if (user.isEmailVerified()) {
+            throw new IdInvalidException("Email đã được xác thực rồi!");
+        }
+
+        // Check OTP match
+        if (user.getOtp() == null || !user.getOtp().equals(dto.getOtp())) {
+            throw new IdInvalidException("Mã OTP không hợp lệ!");
+        }
+
+        // Check expiration
+        if (user.getOtpExpiration() == null || Instant.now().isAfter(user.getOtpExpiration())) {
+            throw new IdInvalidException("Mã OTP đã hết hạn!");
+        }
+
+        user.setOtp(null);
+        user.setOtpExpiration(null);
+        user.setEmailVerified(true); // Đánh dấu email đã verify
+
+        // MENTEE → ACTIVE ngay, MENTOR → giữ PENDING chờ Admin duyệt profile
+        if (user.getRole() == RoleEnum.MENTEE) {
+            user.setStatus(UserStatusEnum.ACTIVE);
+        }
+
+        return this.userRepository.save(user);
+
+    }
+
 }
