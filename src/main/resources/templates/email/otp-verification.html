@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực Email - Mentoria</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6c47ff;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            color: #1a1a2e;
+        }
+
+        .otp-box {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #6c47ff;
+            background: #f0edff;
+            padding: 16px 24px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .note {
+            color: #888;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 12px;
+            color: #bbb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">Mentoria ✦</div>
+        <h2>Xác thực tài khoản của bạn</h2>
+        <p>Xin chào <strong th:text="${name}">User</strong>,</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản Mentoria. Vui lòng nhập mã OTP bên dưới để xác thực email:</p>
+
+        <div class="otp-box" th:text="${otp}">123456</div>
+
+        <p class="note">⏱ Mã OTP có hiệu lực trong <strong>5 phút</strong>. Không chia sẻ mã này với bất kỳ ai.</p>
+        <p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.</p>
+
+        <div class="footer">
+            © 2026 Mentoria Platform · <a href="#">Điều khoản sử dụng</a>
+        </div>
+    </div>
+</body>
+
+</html>
