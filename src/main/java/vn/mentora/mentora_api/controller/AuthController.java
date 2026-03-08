@@ -25,6 +25,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -99,11 +102,95 @@ public class AuthController {
 
         this.userService.updateRefreshToken(user.getEmail(), refreshToken);
         ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
-                .httpOnly(true).secure(false).path("/")
-                .maxAge(refreshTokenExpiration).sameSite("Lax").build();
+                .httpOnly(true).secure(true).path("/")
+                .maxAge(refreshTokenExpiration).sameSite("None").build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(res);
+    }
+
+    @GetMapping("/refresh")
+    @ApiMessage("Refresh token thành công")
+    public ResponseEntity<ResLoginDTO> getRefreshToken(
+            @CookieValue(name = "refresh_token", defaultValue = "none") String refreshToken)
+            throws IdInvalidException {
+
+        if (refreshToken.equals("none")) {
+            throw new IdInvalidException("Không có refresh token trong cookie");
+        }
+
+        // Verify JWT
+        Jwt decodedToken;
+        try {
+            decodedToken = this.securityUtil.checkValidRefreshToken(refreshToken);
+        } catch (Exception e) {
+            throw new IdInvalidException("Refresh token không hợp lệ");
+        }
+
+        String email = decodedToken.getSubject();
+
+        // Check DB match (phòng trường hợp token cũ bị reuse)
+        User user = this.userService.fetchUserByRefreshTokenAndEmail(
+                refreshToken, email);
+        if (user == null) {
+            throw new IdInvalidException("Refresh token không hợp lệ");
+        }
+
+        // Token Rotation — tạo cặp token MỚI
+        ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
+                user.getUserId(), user.getEmail(),
+                user.getFirstName(), user.getLastName(),
+                user.getRole(), user.getAvatarUrl());
+
+        String newAccessToken = this.securityUtil.createAccessToken(
+                email, user.getRole().name(), userLogin);
+        String newRefreshToken = this.securityUtil.createRefreshToken(
+                email, userLogin);
+
+        // Update refresh token mới trong DB
+        this.userService.updateRefreshToken(email, newRefreshToken);
+
+        ResLoginDTO res = new ResLoginDTO();
+        res.setAccessToken(newAccessToken);
+        res.setUser(userLogin);
+
+        // Set new cookie
+        ResponseCookie resCookie = ResponseCookie
+                .from("refresh_token", newRefreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(refreshTokenExpiration)
+                .sameSite("None")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                .body(res);
+    }
+
+    @PostMapping("/logout")
+    @ApiMessage("Đăng xuất thành công")
+    public ResponseEntity<Void> logout() throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Chưa đăng nhập"));
+
+        // Clear refresh token trong DB
+        this.userService.updateRefreshToken(email, null);
+
+        // Clear cookie (maxAge = 0 → browser xóa cookie)
+        ResponseCookie deleteCookie = ResponseCookie
+                .from("refresh_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("None")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .build();
     }
 
 }

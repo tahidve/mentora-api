@@ -1,6 +1,8 @@
 package vn.mentora.mentora_api.domain.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.mentora.mentora_api.util.constant.RoleEnum;
 
@@ -14,6 +16,8 @@ public class ResLoginDTO {
 
     @Getter
     @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class UserLogin {
         private Long id;
         private String email;
