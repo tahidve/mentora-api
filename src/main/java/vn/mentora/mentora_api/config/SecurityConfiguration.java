@@ -7,6 +7,8 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -82,8 +84,15 @@ public class SecurityConfiguration {
 
         String[] whiteList = {
                 "/",
-                "/api/v1/auth/**"
-                // "/test"
+                "/api/v1/auth/login",
+                "/api/v1/auth/register/mentee",
+                "/api/v1/auth/register/mentor",
+                "/api/v1/auth/verify-otp",
+                "/api/v1/auth/refresh",
+                "/api/v1/skills",
+                "/api/v1/categories",
+                "/api/v1/companies",
+                "/api/v1/mentors/{id}/work-experience"
         };
 
         http

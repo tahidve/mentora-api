@@ -25,6 +25,8 @@ public class WorkFor {
     @EmbeddedId
     private WorkForId id;
 
+    private boolean isCurrent;
+
     @ManyToOne(fetch = FetchType.LAZY)
     // @MapsId("mentorId"): khi setMentor(mentor) → tự động id.mentorId =
     // mentor.getId()
