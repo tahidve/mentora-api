@@ -4,6 +4,9 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -31,6 +34,7 @@ public class Mentor {
     private String bio;
     private String headline;
     private String cvUrl;
+    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
     private ResponseTimeEnum responseTime;
@@ -51,4 +55,9 @@ public class Mentor {
     @OneToMany(mappedBy = "mentor")
     @JsonIgnore
     private List<WorkFor> workExperiences;
+
+    @ElementCollection
+    @CollectionTable(name = "mentor_languages", joinColumns = @JoinColumn(name = "mentor_id"))
+    @Column(name = "language")
+    private List<String> languages;
 }
