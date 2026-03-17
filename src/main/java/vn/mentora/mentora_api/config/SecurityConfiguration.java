@@ -100,6 +100,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults()) // Dùng CorsConfig bean
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(whiteList).permitAll() // Public endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/v1/mentors/{id}").permitAll()
                         .anyRequest().authenticated() // Còn lại cần JWT
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2 // JWT Resource Server

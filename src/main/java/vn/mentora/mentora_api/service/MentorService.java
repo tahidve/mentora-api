@@ -1,24 +1,25 @@
 package vn.mentora.mentora_api.service;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import vn.mentora.mentora_api.domain.Company;
-import vn.mentora.mentora_api.domain.JobTitle;
-import vn.mentora.mentora_api.domain.Mentor;
-import vn.mentora.mentora_api.domain.WorkFor;
-import vn.mentora.mentora_api.domain.WorkForId;
+import org.springframework.web.multipart.MultipartFile;
+import vn.mentora.mentora_api.domain.*;
+import vn.mentora.mentora_api.domain.request.ReqUpdateMentorDTO;
 import vn.mentora.mentora_api.domain.request.ReqWorkExperienceDTO;
+import vn.mentora.mentora_api.domain.response.ResMentorProfileDTO;
 import vn.mentora.mentora_api.domain.response.ResWorkExperienceDTO;
+
 import java.util.stream.Collectors;
-import vn.mentora.mentora_api.repository.CompanyRepository;
-import vn.mentora.mentora_api.repository.JobTitleRepository;
-import vn.mentora.mentora_api.repository.MentorRepository;
-import vn.mentora.mentora_api.repository.WorkForRepository;
+
+import vn.mentora.mentora_api.repository.*;
 import vn.mentora.mentora_api.util.SecurityUtil;
+import vn.mentora.mentora_api.util.constant.ResponseTimeEnum;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 @Service
@@ -28,13 +29,21 @@ public class MentorService {
     private final CompanyRepository companyRepository;
     private final JobTitleRepository jobTitleRepository;
     private final WorkForRepository workForRepository;
+    private final SkillRepository skillRepository;
+    private final FileService fileService;
 
-    public MentorService(MentorRepository mentorRepository, CompanyRepository companyRepository,
-            JobTitleRepository jobTitleRepository, WorkForRepository workForRepository) {
+    public MentorService(MentorRepository mentorRepository,
+            CompanyRepository companyRepository,
+            JobTitleRepository jobTitleRepository,
+            WorkForRepository workForRepository,
+            SkillRepository skillRepository,
+            FileService fileService) {
         this.mentorRepository = mentorRepository;
         this.companyRepository = companyRepository;
         this.jobTitleRepository = jobTitleRepository;
         this.workForRepository = workForRepository;
+        this.skillRepository = skillRepository;
+        this.fileService = fileService;
     }
 
     @Transactional
@@ -83,6 +92,127 @@ public class MentorService {
         return workForList.stream()
                 .map(workFor -> new ResWorkExperienceDTO(workFor))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ResMentorProfileDTO updateProfile(String email, ReqUpdateMentorDTO request) throws IdInvalidException {
+        Optional<Mentor> mentorOptional = this.mentorRepository.findByUserEmail(email);
+        if (mentorOptional.isEmpty()) {
+            throw new IdInvalidException("Mentor không tồn tại!");
+        }
+
+        Mentor mentor = mentorOptional.get();
+        mentor.setBio(request.getBio());
+        mentor.setHeadline(request.getHeadline());
+        mentor.getUser().setCountry(request.getCountry());
+        mentor.getUser().setTimezone(request.getTimezone());
+
+        if (request.getLanguages() != null) {
+            mentor.setLanguages(request.getLanguages());
+        }
+
+        if (request.getSkillIds() != null) {
+            List<Skill> skills = this.skillRepository.findBySkillIdIn(request.getSkillIds());
+            mentor.setSkills(skills);
+        }
+
+        mentorRepository.save(mentor);
+        return this.convertToProfileDTO(mentor);
+    }
+
+    public ResMentorProfileDTO getPublicProfile(Long mentorId) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại!"));
+        return this.convertToProfileDTO(mentor);
+    }
+
+    @Transactional
+    public String uploadAvatar(String email, MultipartFile file) throws IdInvalidException, IOException {
+        Mentor mentor = this.getMentorByEmail(email);
+
+        // Gọi FileService để lưu file, lấy về uniqueFilename
+        String filename = this.fileService.store(file);
+
+        // Lưu URL vào Mentor (chỉ tên file, FE ghép với base URL)
+        mentor.setAvatarUrl(filename);
+        mentorRepository.save(mentor);
+
+        return filename;
+    }
+
+    private ResMentorProfileDTO convertToProfileDTO(Mentor mentor) {
+        ResMentorProfileDTO dto = new ResMentorProfileDTO();
+        dto.setId(mentor.getMentorId());
+        dto.setName(mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName());
+        dto.setAvatarUrl(mentor.getAvatarUrl());
+        dto.setBio(mentor.getBio());
+        dto.setHeadline(mentor.getHeadline());
+        dto.setResponseTime(mentor.getResponseTime());
+        dto.setTotalMentee(mentor.getTotalMentee());
+        dto.setTotalStars(mentor.getTotalStars());
+        dto.setTotalReviews(mentor.getTotalReviews());
+        dto.setLanguages(mentor.getLanguages());
+
+        List<String> skillNames = new ArrayList<>();
+        for (Skill skill : mentor.getSkills()) {
+            skillNames.add(skill.getSkillName());
+        }
+        dto.setSkills(skillNames);
+
+        List<ResWorkExperienceDTO> workExperiences = new ArrayList<>();
+        for (WorkFor workFor : mentor.getWorkExperiences()) {
+            workExperiences.add(new ResWorkExperienceDTO(workFor));
+        }
+        dto.setWorkExperiences(workExperiences);
+
+        // Badge logic
+        dto.setBadges(this.computeBadges(mentor));
+        return dto;
+    }
+
+    private List<String> computeBadges(Mentor mentor) {
+        List<String> badges = new ArrayList<>();
+
+        double rating = mentor.getTotalReviews() > 0
+                ? (double) mentor.getTotalStars() / mentor.getTotalReviews()
+                : 0;
+        if (rating >= 4.8 && mentor.getTotalReviews() >= 10) {
+            badges.add("Top Mentor");
+        }
+
+        if (mentor.getResponseTime() != null) {
+            ResponseTimeEnum rt = mentor.getResponseTime();
+            if (rt == ResponseTimeEnum.WITHIN_1_HOUR || rt == ResponseTimeEnum.WITHIN_2_HOURS) {
+                badges.add("Quick Responder");
+            }
+        }
+
+        return badges;
+    }
+
+    public Mentor getMentorByEmail(String email) throws IdInvalidException {
+        Optional<Mentor> mentorOptional = this.mentorRepository.findByUserEmail(email);
+        if (mentorOptional.isEmpty()) {
+            throw new IdInvalidException("Không tồn tại mentor có email" + email);
+        }
+        return mentorOptional.get();
+    }
+
+    @Transactional
+    public ResMentorProfileDTO updateSkills(String email, List<Long> skillIds) throws IdInvalidException {
+        Mentor mentor = this.getMentorByEmail(email);
+        List<Skill> skills = this.skillRepository.findBySkillIdIn(skillIds);
+        mentor.setSkills(skills);
+        this.mentorRepository.save(mentor);
+        return this.convertToProfileDTO(mentor);
+    }
+
+    @Transactional
+    public ResMentorProfileDTO updateLanguages(String email, List<String> languages) throws IdInvalidException {
+        Mentor mentor = this.getMentorByEmail(email);
+        mentor.setLanguages(languages);
+        this.mentorRepository.save(mentor);
+        return this.convertToProfileDTO(mentor);
     }
 
 }
