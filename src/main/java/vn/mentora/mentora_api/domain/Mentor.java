@@ -50,4 +50,8 @@ public class Mentor {
 
     @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
     private List<Plan> plans;
+
+    @OneToMany(mappedBy = "mentor")
+    private List<Slot> slots;
+
 }
