@@ -35,4 +35,5 @@ public abstract class Plan {
     @ManyToOne
     @JoinColumn(name = "mentor_id")
     private Mentor mentor;
+
 }

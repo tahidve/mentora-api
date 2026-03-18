@@ -93,6 +93,7 @@ public class SecurityConfiguration {
                 "/api/v1/categories",
                 "/api/v1/companies",
                 "/api/v1/mentors/{id}/work-experience",
+                "/api/v1/mentors/{id}/plans",
                 "/uploads/**"
         };
 
