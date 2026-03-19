@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import vn.mentora.mentora_api.domain.Mentor;
 import vn.mentora.mentora_api.domain.Slot;
 import vn.mentora.mentora_api.domain.request.ReqCreateSlotDTO;
+import vn.mentora.mentora_api.domain.response.ResSlotDTO;
 import vn.mentora.mentora_api.repository.MentorRepository;
 import vn.mentora.mentora_api.repository.SlotRepository;
 import vn.mentora.mentora_api.util.constant.SlotStatusEnum;
@@ -48,7 +49,18 @@ public class SlotService {
         }
     }
 
-    public Slot createSlot(String email, ReqCreateSlotDTO dto) throws IdInvalidException {
+    private ResSlotDTO toDTO(Slot slot) {
+        ResSlotDTO dto = new ResSlotDTO();
+        dto.setSlotId(slot.getSlotId());
+        dto.setMentorId(slot.getMentor().getMentorId());
+        dto.setDate(slot.getDate());
+        dto.setStartTime(slot.getStartTime());
+        dto.setEndTime(slot.getEndTime());
+        dto.setStatus(slot.getStatus());
+        return dto;
+    }
+
+    public ResSlotDTO createSlot(String email, ReqCreateSlotDTO dto) throws IdInvalidException {
         Mentor mentor = this.mentorRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại!"));
 
@@ -70,12 +82,13 @@ public class SlotService {
         slot.setStartTime(dto.getStartTime());
         slot.setStatus(SlotStatusEnum.AVAILABLE);
 
-        return this.slotRepository.save(slot);
+        return toDTO(this.slotRepository.save(slot));
     }
 
-    public List<Slot> getAvailableSlot(Long mentorId) {
+    public List<ResSlotDTO> getAvailableSlot(Long mentorId) {
         return this.slotRepository.findByMentorMentorIdAndDateAfterAndStatus(mentorId, LocalDate.now(),
-                SlotStatusEnum.AVAILABLE);
+                SlotStatusEnum.AVAILABLE)
+                .stream().map(this::toDTO).toList();
     }
 
     public void markAsBooked(Long slotId) throws IdInvalidException {
