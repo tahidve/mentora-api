@@ -2,10 +2,12 @@ package vn.mentora.mentora_api.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import vn.mentora.mentora_api.domain.Mentor;
 import vn.mentora.mentora_api.domain.Slot;
 import vn.mentora.mentora_api.domain.request.ReqCreateSlotDTO;
@@ -96,6 +98,18 @@ public class SlotService {
                 .orElseThrow(() -> new IdInvalidException("Slot không tồn tại"));
         slot.setStatus(SlotStatusEnum.BOOKED);
         this.slotRepository.save(slot);
+    }
+
+    @Transactional
+    public List<ResSlotDTO> createBulkSlots(String email, List<ReqCreateSlotDTO> dtos) throws IdInvalidException {
+        List<ResSlotDTO> result = new ArrayList<>();
+
+        for (ReqCreateSlotDTO dto : dtos) {
+            ResSlotDTO createdSlot = this.createSlot(email, dto);
+            result.add(createdSlot);
+        }
+
+        return result;
     }
 
 }

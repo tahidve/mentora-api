@@ -1,6 +1,9 @@
 package vn.mentora.mentora_api.controller;
 
 import vn.mentora.mentora_api.domain.response.ResSlotDTO;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,8 +36,19 @@ public class SlotController {
             throws IdInvalidException {
         String email = SecurityUtil.getCurrentUserLogin()
                 .orElseThrow(() -> new IdInvalidException("Invalid login"));
-        ResSlotDTO slot = this.slotService.createSlot(email, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(slot);
+        ResSlotDTO response = this.slotService.createSlot(email, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/mentors/me/slots/bulk")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Tạo nhiều slot thành công")
+    public ResponseEntity<List<ResSlotDTO>> createBulkSlots(@Valid @RequestBody List<ReqCreateSlotDTO> request)
+            throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Invalid login"));
+        List<ResSlotDTO> response = this.slotService.createBulkSlots(email, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 }
