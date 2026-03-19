@@ -7,6 +7,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,13 @@ public class SlotController {
                 .orElseThrow(() -> new IdInvalidException("Invalid login"));
         List<ResSlotDTO> response = this.slotService.createBulkSlots(email, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/mentors/{id}/slots")
+    @ApiMessage("Lấy danh sách slot available của mentor thành công")
+    public ResponseEntity<List<ResSlotDTO>> getAvailableSlots(@PathVariable("id") Long mentorId) {
+        List<ResSlotDTO> response = this.slotService.getAvailableSlot(mentorId);
+        return ResponseEntity.ok().body(response);
     }
 
 }

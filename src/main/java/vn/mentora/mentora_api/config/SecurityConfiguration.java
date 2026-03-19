@@ -94,6 +94,7 @@ public class SecurityConfiguration {
                 "/api/v1/companies",
                 "/api/v1/mentors/{id}/work-experience",
                 "/api/v1/mentors/{id}/plans",
+                "/api/v1/mentors/{id}/slots",
                 "/uploads/**"
         };
 
