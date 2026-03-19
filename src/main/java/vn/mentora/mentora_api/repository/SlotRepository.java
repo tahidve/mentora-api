@@ -18,6 +18,9 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
     // Lấy tất cả slot của mentor có date > date truyền và theo status
     List<Slot> findByMentorMentorIdAndDateAfterAndStatus(Long mentorId, LocalDate date, SlotStatusEnum status);
 
+    // Lấy tất cả slot trong ngày của mentor
+    List<Slot> findByMentorMentorIdAndDate(Long mentorId, LocalDate date);
+
     // Check nhanh mentor đã có slot cùng ngày + cùng giờ bắt đầu
     boolean existsByMentorMentorIdAndDateAndStartTime(Long mentorId, LocalDate date, LocalTime startTime);
 }
