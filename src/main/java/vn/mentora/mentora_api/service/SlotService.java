@@ -112,4 +112,24 @@ public class SlotService {
         return result;
     }
 
+    public void cancelSlot(Long slotId, String email) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Mentor không hợp lệ"));
+
+        Slot slot = this.slotRepository.findById(slotId)
+                .orElseThrow(() -> new IdInvalidException("Slot không tồn tại"));
+
+        if (!slot.getMentor().getMentorId().equals(mentor.getMentorId())) {
+            throw new IdInvalidException("Mentor không có quyền hủy slot của mentor khác");
+        }
+
+        if (slot.getStatus() != SlotStatusEnum.AVAILABLE) {
+            throw new IdInvalidException(
+                    "Chỉ có thể hủy slot đang trống, nếu slot đã có người book, bạn phải hủy session đó");
+        }
+
+        slot.setStatus(SlotStatusEnum.CANCELLED);
+        this.slotRepository.save(slot);
+    }
+
 }

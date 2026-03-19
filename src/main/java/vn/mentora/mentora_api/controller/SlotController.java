@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,6 +59,16 @@ public class SlotController {
     public ResponseEntity<List<ResSlotDTO>> getAvailableSlots(@PathVariable("id") Long mentorId) {
         List<ResSlotDTO> response = this.slotService.getAvailableSlot(mentorId);
         return ResponseEntity.ok().body(response);
+    }
+
+    @PutMapping("/slots/{id}/cancel")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Hủy slot thành công")
+    public ResponseEntity<Void> cancelSlot(@PathVariable("id") Long slotId) throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Invalid login"));
+        this.slotService.cancelSlot(slotId, email);
+        return ResponseEntity.ok().build();
     }
 
 }
