@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,12 +13,16 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.turkraft.springfilter.boot.Filter;
+
 import vn.mentora.mentora_api.domain.Mentor;
 import vn.mentora.mentora_api.domain.WorkFor;
 import vn.mentora.mentora_api.domain.request.ReqUpdateMentorDTO;
 import vn.mentora.mentora_api.domain.request.ReqWorkExperienceDTO;
 import vn.mentora.mentora_api.domain.response.ResMentorProfileDTO;
 import vn.mentora.mentora_api.domain.response.ResWorkExperienceDTO;
+import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 import vn.mentora.mentora_api.service.MentorService;
 import vn.mentora.mentora_api.util.SecurityUtil;
 import vn.mentora.mentora_api.util.annotation.ApiMessage;
@@ -52,7 +58,8 @@ public class MentorController {
     @PutMapping("/mentors/me")
     @PreAuthorize("hasAuthority('MENTOR')")
     @ApiMessage("Mentor update profile success")
-    public ResponseEntity<ResMentorProfileDTO> updateMentorProfile(@RequestBody ReqUpdateMentorDTO request) throws IdInvalidException {
+    public ResponseEntity<ResMentorProfileDTO> updateMentorProfile(@RequestBody ReqUpdateMentorDTO request)
+            throws IdInvalidException {
         Optional<String> emailOptional = SecurityUtil.getCurrentUserLogin();
         if (emailOptional.isEmpty()) {
             throw new IdInvalidException("Invalid login");
@@ -90,7 +97,8 @@ public class MentorController {
     @PostMapping("/mentors/me/avatar")
     @PreAuthorize("hasAuthority('MENTOR')")
     @ApiMessage("Mentor upload avatar success")
-    public ResponseEntity<String> uploadAvatar(@RequestParam("file") MultipartFile file) throws IdInvalidException, IOException {
+    public ResponseEntity<String> uploadAvatar(@RequestParam("file") MultipartFile file)
+            throws IdInvalidException, IOException {
         Optional<String> emailOptional = SecurityUtil.getCurrentUserLogin();
         if (emailOptional.isEmpty()) {
             throw new IdInvalidException("Invalid login");
@@ -104,7 +112,8 @@ public class MentorController {
     @PutMapping("/mentors/me/skills")
     @PreAuthorize("hasAuthority('MENTOR')")
     @ApiMessage("Mentor update skills success")
-    public ResponseEntity<ResMentorProfileDTO> updateSkills(@RequestBody List<Long> skillIds) throws IdInvalidException {
+    public ResponseEntity<ResMentorProfileDTO> updateSkills(@RequestBody List<Long> skillIds)
+            throws IdInvalidException {
         Optional<String> emailOptional = SecurityUtil.getCurrentUserLogin();
         if (emailOptional.isEmpty()) {
             throw new IdInvalidException("Invalid login");
@@ -119,7 +128,8 @@ public class MentorController {
     @PutMapping("/mentors/me/languages")
     @PreAuthorize("hasAuthority('MENTOR')")
     @ApiMessage("Mentor update language success")
-    public ResponseEntity<ResMentorProfileDTO> updateLanguages(@RequestBody List<String> languages) throws IdInvalidException {
+    public ResponseEntity<ResMentorProfileDTO> updateLanguages(@RequestBody List<String> languages)
+            throws IdInvalidException {
         Optional<String> emailOptional = SecurityUtil.getCurrentUserLogin();
         if (emailOptional.isEmpty()) {
             throw new IdInvalidException("Invalid login");
@@ -128,6 +138,13 @@ public class MentorController {
 
         ResMentorProfileDTO result = this.mentorService.updateLanguages(email, languages);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/mentors")
+    @ApiMessage("Mentors fetched successfully")
+    public ResponseEntity<ResultPaginationDTO> getMentors(@Filter Specification<Mentor> spec, Pageable pageable) {
+        ResultPaginationDTO response = this.mentorService.fetchMentorsPaginated(spec, pageable);
+        return ResponseEntity.ok(response);
     }
 
 }

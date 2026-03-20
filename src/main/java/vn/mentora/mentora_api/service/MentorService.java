@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,8 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.mentora.mentora_api.domain.*;
 import vn.mentora.mentora_api.domain.request.ReqUpdateMentorDTO;
 import vn.mentora.mentora_api.domain.request.ReqWorkExperienceDTO;
+import vn.mentora.mentora_api.domain.response.ResMentorCardDTO;
 import vn.mentora.mentora_api.domain.response.ResMentorProfileDTO;
 import vn.mentora.mentora_api.domain.response.ResWorkExperienceDTO;
+import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 
 import java.util.stream.Collectors;
 
@@ -213,6 +218,46 @@ public class MentorService {
         mentor.setLanguages(languages);
         this.mentorRepository.save(mentor);
         return this.convertToProfileDTO(mentor);
+    }
+
+    public ResultPaginationDTO fetchMentorsPaginated(Specification<Mentor> spec, Pageable pageable) {
+        Page<Mentor> page = this.mentorRepository.findAll(spec, pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber());
+        meta.setPageSize(pageable.getPageSize());
+        meta.setPages(page.getTotalPages());
+        meta.setTotal(page.getTotalElements());
+
+        result.setMeta(meta);
+
+        List<ResMentorCardDTO> cards = new ArrayList<>();
+        for (Mentor mentor : page.getContent()) {
+            ResMentorCardDTO card = this.convertToCardDTO(mentor);
+            cards.add(card);
+        }
+
+        result.setResult(cards);
+        return result;
+    }
+
+    public ResMentorCardDTO convertToCardDTO(Mentor mentor) {
+        ResMentorCardDTO mentorCard = new ResMentorCardDTO();
+        mentorCard.setId(mentor.getMentorId());
+        mentorCard.setAvatarUrl(mentor.getAvatarUrl());
+        mentorCard.setHeadline(mentor.getHeadline());
+        mentorCard.setName(mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName());
+        mentorCard.setBadges(this.computeBadges(mentor));
+        mentorCard.setSkills(mentor.getSkills().stream()
+                .limit(3)
+                .map(skill -> skill.getSkillName())
+                .collect(Collectors.toList()));
+        mentorCard.setTotalReviews(mentor.getTotalReviews());
+        mentorCard.setTotalStars(mentor.getTotalStars());
+
+        return mentorCard;
     }
 
 }
