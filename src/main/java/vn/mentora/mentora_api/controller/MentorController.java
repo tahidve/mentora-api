@@ -85,6 +85,15 @@ public class MentorController {
         return ResponseEntity.ok().body(response);
     }
 
+    @GetMapping("/mentors/search")
+    @ApiMessage("Search mentors by keyword success")
+    public ResponseEntity<ResultPaginationDTO> searchMentors(
+            @RequestParam(name = "q", defaultValue = "") String keyword, Pageable pageable) {
+
+        ResultPaginationDTO response = this.mentorService.searchMentors(keyword, pageable);
+        return ResponseEntity.ok().body(response);
+    }
+
     // All users see mentor profile
     @GetMapping("/mentors/{id}")
     @ApiMessage("Get mentor profile success")

@@ -11,6 +11,8 @@ public class ResMentorCardDTO {
     private String name;
     private String avatarUrl;
     private String headline;
+    private String company;    // Tên công ty hiện tại (isCurrent = true), null nếu chưa có
+    private double rating;     // Rating trung bình
     private int totalStars;
     private int totalReviews;
     private List<String> skills; // top 3

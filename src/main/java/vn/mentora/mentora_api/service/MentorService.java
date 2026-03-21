@@ -226,7 +226,7 @@ public class MentorService {
         ResultPaginationDTO result = new ResultPaginationDTO();
         ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
 
-        meta.setPage(pageable.getPageNumber());
+        meta.setPage(pageable.getPageNumber() + 1);
         meta.setPageSize(pageable.getPageSize());
         meta.setPages(page.getTotalPages());
         meta.setTotal(page.getTotalElements());
@@ -256,8 +256,46 @@ public class MentorService {
                 .collect(Collectors.toList()));
         mentorCard.setTotalReviews(mentor.getTotalReviews());
         mentorCard.setTotalStars(mentor.getTotalStars());
+        if (mentor.getTotalReviews() > 0) {
+            // Làm tròn 1 chữ số thập phân (VD: 4.5)
+            double r = (double) mentor.getTotalStars() / mentor.getTotalReviews();
+            mentorCard.setRating(Math.round(r * 10.0) / 10.0);
+        } else {
+            mentorCard.setRating(0.0);
+        }
+
+        // Lấy tên công ty hiện tại (isCurrent = true), null nếu không có
+        String company = mentor.getWorkExperiences().stream()
+                .filter(w -> w.isCurrent())
+                .map(w -> w.getCompany().getCompanyName())
+                .findFirst()
+                .orElse(null);
+        mentorCard.setCompany(company);
 
         return mentorCard;
+    }
+
+    public ResultPaginationDTO searchMentors(String keyword, Pageable pageable) {
+        String trimmedKeyword = keyword == null ? "" : keyword.trim();
+        Page<Mentor> page = this.mentorRepository.searchByKeyword(trimmedKeyword, pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setTotal(page.getTotalElements());
+        meta.setPages(page.getTotalPages());
+        result.setMeta(meta);
+
+        List<ResMentorCardDTO> cards = new ArrayList<>();
+        for (Mentor mentor : page.getContent()) {
+            ResMentorCardDTO card = this.convertToCardDTO(mentor);
+            cards.add(card);
+        }
+
+        result.setResult(cards);
+        return result;
     }
 
 }
