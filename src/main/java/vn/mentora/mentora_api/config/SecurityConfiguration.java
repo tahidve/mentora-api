@@ -98,6 +98,7 @@ public class SecurityConfiguration {
                 "/api/v1/mentors",
                 "/api/v1/filters/available",
                 "/api/v1/mentors/search",
+                "/api/v1/discounts",
                 "/uploads/**"
         };
 

@@ -15,6 +15,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import vn.mentora.mentora_api.util.constant.DiscountTypeEnum;
@@ -39,7 +40,10 @@ public class Discount {
     @Column(precision = 12, scale = 2, nullable = false)
     private BigDecimal discountValue;
 
+    @NotNull(message = "Ngày discount bắt đầu không được để trống")
     private LocalDate startDate;
+
+    @NotNull(message = "Ngày discount kết thúc không được để trống")
     private LocalDate endDate;
 
     private Instant createdAt;
