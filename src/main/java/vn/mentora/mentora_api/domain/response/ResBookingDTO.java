@@ -15,6 +15,8 @@ public class ResBookingDTO {
 
     private Long invoiceId;
 
+    private Long meetingId;
+
     private BigDecimal amountSubtotal;
 
     private BigDecimal amountTotal;

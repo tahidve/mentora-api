@@ -1,6 +1,7 @@
 package vn.mentora.mentora_api.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -17,5 +18,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
     List<Meeting> findByInvoiceMenteeMenteeId(Long menteeId);
 
     List<Meeting> findBySlotMentorMentorIdAndStatus(Long mentorid, MeetingStatusEnum status);
+
+    Optional<Meeting> findByInvoiceInvoiceId(Long invoiceId);
 
 }
