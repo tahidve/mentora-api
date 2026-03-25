@@ -26,7 +26,7 @@ public class Mentor {
     @Enumerated(EnumType.STRING)
     private ResponseTimeEnum responseTime;
 
-    private int totalMentee;
+    private int totalMeetings;
     private int totalStars;
     private int totalReviews;
 

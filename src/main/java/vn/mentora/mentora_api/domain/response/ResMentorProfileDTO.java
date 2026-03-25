@@ -14,7 +14,7 @@ public class ResMentorProfileDTO {
     private String bio;
     private String headline;
     private ResponseTimeEnum responseTime;
-    private int totalMentee;
+    private int totalMeetings;
     private int totalStars;
     private int totalReviews;
     private List<String> languages;

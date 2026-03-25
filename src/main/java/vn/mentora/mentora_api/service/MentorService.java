@@ -153,7 +153,7 @@ public class MentorService {
         dto.setBio(mentor.getBio());
         dto.setHeadline(mentor.getHeadline());
         dto.setResponseTime(mentor.getResponseTime());
-        dto.setTotalMentee(mentor.getTotalMentee());
+        dto.setTotalMeetings(mentor.getTotalMeetings());
         dto.setTotalStars(mentor.getTotalStars());
         dto.setTotalReviews(mentor.getTotalReviews());
         dto.setLanguages(mentor.getLanguages());

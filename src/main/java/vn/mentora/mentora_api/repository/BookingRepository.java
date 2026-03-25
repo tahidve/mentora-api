@@ -8,4 +8,6 @@ import vn.mentora.mentora_api.domain.Booking;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByBookingIdAndMenteeMenteeId(Long bookingId, Long menteeId);
+
+    Optional<Booking> findByPlanRegistrationRegistrationId(Long id);
 }
