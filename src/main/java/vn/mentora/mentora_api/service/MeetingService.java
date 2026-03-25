@@ -1,17 +1,29 @@
 package vn.mentora.mentora_api.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import vn.mentora.mentora_api.domain.Booking;
 import vn.mentora.mentora_api.domain.Invoice;
 import vn.mentora.mentora_api.domain.Meeting;
+import vn.mentora.mentora_api.domain.Mentee;
 import vn.mentora.mentora_api.domain.Mentor;
+import vn.mentora.mentora_api.domain.Plan;
+import vn.mentora.mentora_api.domain.PlanMentorship;
+import vn.mentora.mentora_api.domain.PlanSession;
+import vn.mentora.mentora_api.domain.response.ResMeetingDTO;
+import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 import vn.mentora.mentora_api.repository.BookingRepository;
 import vn.mentora.mentora_api.repository.InvoiceRepository;
 import vn.mentora.mentora_api.repository.MeetingRepository;
+import vn.mentora.mentora_api.repository.MenteeRepository;
 import vn.mentora.mentora_api.repository.MentorRepository;
 import vn.mentora.mentora_api.util.constant.BookingStatusEnum;
 import vn.mentora.mentora_api.util.constant.MeetingStatusEnum;
@@ -26,13 +38,16 @@ public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final BookingRepository bookingRepository;
     private final InvoiceRepository invoiceRepository;
+    private final MenteeRepository menteeRepository;
 
     public MeetingService(MentorRepository mentorRepository, MeetingRepository meetingRepository,
-            BookingRepository bookingRepository, InvoiceRepository invoiceRepository) {
+            BookingRepository bookingRepository, InvoiceRepository invoiceRepository,
+            MenteeRepository menteeRepository) {
         this.meetingRepository = meetingRepository;
         this.mentorRepository = mentorRepository;
         this.bookingRepository = bookingRepository;
         this.invoiceRepository = invoiceRepository;
+        this.menteeRepository = menteeRepository;
     }
 
     @Transactional
@@ -116,6 +131,89 @@ public class MeetingService {
         this.bookingRepository.save(booking);
 
         return this.meetingRepository.save(meeting);
+    }
+
+    public ResultPaginationDTO fetchMeetings(Specification spec, Pageable pageable) throws IdInvalidException {
+        Page<Meeting> page = this.meetingRepository.findAll(spec, pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setPages(page.getTotalPages());
+        meta.setTotal(page.getTotalElements());
+
+        result.setMeta(meta);
+
+        List<ResMeetingDTO> meetingDTOs = new ArrayList<>();
+        for (Meeting meeting : page.getContent()) {
+            ResMeetingDTO dto = this.convertToMeetingDTO(meeting);
+            meetingDTOs.add(dto);
+        }
+
+        result.setResult(meetingDTOs);
+
+        return result;
+    }
+
+    public ResultPaginationDTO findByMenteeEmail(String email, Pageable pageable) throws IdInvalidException {
+        Mentee mentee = this.menteeRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Mentee không tồn tại"));
+
+        Page<Meeting> page = this.meetingRepository.findByInvoiceMenteeMenteeId(mentee.getMenteeId(), pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setPages(page.getTotalPages());
+        meta.setTotal(page.getTotalElements());
+
+        result.setMeta(meta);
+
+        List<ResMeetingDTO> meetingDTOs = new ArrayList<>();
+        for (Meeting meeting : page.getContent()) {
+            ResMeetingDTO dto = this.convertToMeetingDTO(meeting);
+            meetingDTOs.add(dto);
+        }
+
+        result.setResult(meetingDTOs);
+
+        return result;
+    }
+
+    public ResMeetingDTO convertToMeetingDTO(Meeting meeting) throws IdInvalidException {
+        ResMeetingDTO dto = new ResMeetingDTO();
+        dto.setDate(meeting.getDate());
+        dto.setEndTime(meeting.getEndTime());
+        dto.setStartTime(meeting.getStartTime());
+        dto.setLocation(meeting.getLocation());
+        dto.setPaymentStatus(meeting.getInvoice().getPaymentStatus());
+        // Tìm booking để dẫn tới meeting này
+        Booking booking = this.bookingRepository
+                .findByPlanRegistrationRegistrationId(meeting.getInvoice().getPlanRegistration().getRegistrationId())
+                .orElseThrow(() -> new IdInvalidException("Không tồn tại booking cho meeting này"));
+        Plan plan = booking.getPlan();
+        String planName = new String();
+        if (plan instanceof PlanSession session) {
+            planName = session.getSessionName();
+        } else if (plan instanceof PlanMentorship planMentorship) {
+            planName = planMentorship.getPlanName();
+        }
+
+        dto.setPlanName(planName);
+
+        dto.setStatus(meeting.getStatus());
+        dto.setInvoiceId(meeting.getInvoice().getInvoiceId());
+        dto.setMeetingId(meeting.getMeetingId());
+        dto.setMenteeName(
+                booking.getMentee().getUser().getFirstName() + " " + booking.getMentee().getUser().getLastName());
+        dto.setMentorName(meeting.getSlot().getMentor().getUser().getFirstName() + " "
+                + meeting.getSlot().getMentor().getUser().getLastName());
+
+        return dto;
     }
 
 }

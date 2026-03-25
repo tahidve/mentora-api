@@ -3,6 +3,8 @@ package vn.mentora.mentora_api.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -21,4 +23,5 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
 
     Optional<Meeting> findByInvoiceInvoiceId(Long invoiceId);
 
+    Page<Meeting> findByInvoiceMenteeMenteeId(Long menteeId, Pageable pageable);
 }
