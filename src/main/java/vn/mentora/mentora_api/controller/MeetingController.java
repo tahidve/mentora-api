@@ -1,7 +1,6 @@
 package vn.mentora.mentora_api.controller;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import vn.mentora.mentora_api.domain.Meeting;
-import vn.mentora.mentora_api.domain.Mentee;
 import vn.mentora.mentora_api.domain.request.ReqSetLocationDTO;
 import vn.mentora.mentora_api.domain.response.ResMeetingDTO;
 import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
@@ -63,6 +61,28 @@ public class MeetingController {
             @PathVariable("id") Long meetingId) throws IdInvalidException {
         String email = SecurityUtil.getCurrentUserLogin().orElseThrow(() -> new IdInvalidException("Invalid login"));
         Meeting meeting = this.meetingService.setMeetingLocation(request.getLocation(), meetingId, email);
+        ResMeetingDTO response = this.meetingService.convertToMeetingDTO(meeting);
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PutMapping("/meetings/{id}/complete")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("mentor set meeting complete success")
+    public ResponseEntity<ResMeetingDTO> setMeetingComplete(@PathVariable("id") Long meetingId)
+            throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin().orElseThrow(() -> new IdInvalidException("Invalid login"));
+        Meeting meeting = this.meetingService.completeMeeting(meetingId, email);
+        ResMeetingDTO response = this.meetingService.convertToMeetingDTO(meeting);
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PutMapping("/meetings/{id}/cancel")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("mentor cancel meeting success")
+    public ResponseEntity<ResMeetingDTO> cancelMeeting(@PathVariable("id") Long meetingId)
+            throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin().orElseThrow(() -> new IdInvalidException("Invalid login"));
+        Meeting meeting = this.meetingService.cancelMeeting(meetingId, email);
         ResMeetingDTO response = this.meetingService.convertToMeetingDTO(meeting);
         return ResponseEntity.ok().body(response);
     }
