@@ -23,4 +23,6 @@ public class ResFeedbackDTO {
 
     private String menteeName;
 
+    private String menteeAvatarUrl;
+
 }

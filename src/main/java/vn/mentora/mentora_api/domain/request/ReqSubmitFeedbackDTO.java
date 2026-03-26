@@ -10,16 +10,13 @@ import lombok.Setter;
 @Setter
 public class ReqSubmitFeedbackDTO {
 
-    @NotNull(message = "planRegistrationId không được để trống")
-    private Long planRegistrationId;
+    @NotNull(message = "meetingId không được để trống")
+    private Long meetingId;
 
     @Min(value = 1, message = "Tối thiểu 1 sao")
     @Max(value = 5, message = "Tối đa 5 sao")
     private int stars;
 
     private String content;
-
-    @NotNull(message = "meetingId không được để trống")
-    private Long meetingId;
 
 }
