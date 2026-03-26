@@ -24,4 +24,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
     Optional<Meeting> findByInvoiceInvoiceId(Long invoiceId);
 
     Page<Meeting> findByInvoiceMenteeMenteeId(Long menteeId, Pageable pageable);
+
+    Page<Meeting> findBySlotMentorMentorId(Long mentorId, Pageable pageable);
 }

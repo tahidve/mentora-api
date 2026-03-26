@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.query.named.ResultMappingMementoNode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -182,6 +183,46 @@ public class MeetingService {
         result.setResult(meetingDTOs);
 
         return result;
+    }
+
+    public ResultPaginationDTO findByMentorEmail(String email, Pageable pageable) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
+
+        Page<Meeting> page = this.meetingRepository.findBySlotMentorMentorId(mentor.getMentorId(), pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setTotal(page.getTotalElements());
+        meta.setPages(page.getTotalPages());
+
+        result.setMeta(meta);
+
+        List<ResMeetingDTO> meetingDTOs = new ArrayList<>();
+        for (Meeting meeting : page.getContent()) {
+            ResMeetingDTO dto = this.convertToMeetingDTO(meeting);
+            meetingDTOs.add(dto);
+        }
+
+        result.setResult(meetingDTOs);
+
+        return result;
+    }
+
+    public ResMeetingDTO getMeetingDetail(Long meetingId, String email) throws IdInvalidException {
+        Meeting meeting = this.meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new IdInvalidException("Meeting không tồn tại"));
+
+        String mentorEmail = meeting.getSlot().getMentor().getUser().getEmail();
+        String menteeEmail = meeting.getInvoice().getMentee().getUser().getEmail();
+        if (!email.equals(menteeEmail) && !email.equals(mentorEmail)) {
+            throw new IdInvalidException("Bạn không có quyền xem meeting này");
+        }
+
+        return this.convertToMeetingDTO(meeting);
     }
 
     public ResMeetingDTO convertToMeetingDTO(Meeting meeting) throws IdInvalidException {
