@@ -81,7 +81,19 @@ public class MeetingService {
         }
 
         if (meeting.getStatus() != MeetingStatusEnum.SCHEDULED) {
-            throw new IdInvalidException("Meeting chưa được lên lịch");
+            throw new IdInvalidException("Meeting chưa được lên lịch hoặc đã bị hủy");
+        }
+
+        // CHỐNG GIAN LẬN: Mentor chỉ được bấm "Complete" sau khi buổi học đã kết thúc
+        // theo lịch.
+        // Ghép date + endTime thành LocalDateTime để so sánh với thời điểm hiện tại.
+        // Ví dụ: Lịch học kết thúc 10:00 ngày 30/3 → phải sau 10:00 ngày 30/3 mới được
+        // bấm.
+        java.time.LocalDateTime scheduledEnd = java.time.LocalDateTime.of(meeting.getDate(), meeting.getEndTime());
+        if (java.time.LocalDateTime.now().isBefore(scheduledEnd)) {
+            throw new IdInvalidException(
+                    "Buổi học chưa kết thúc! Bạn chỉ có thể hoàn thành sau " + meeting.getEndTime() + " ngày "
+                            + meeting.getDate());
         }
 
         meeting.setStatus(MeetingStatusEnum.COMPLETED);
@@ -237,10 +249,16 @@ public class MeetingService {
                 .findByPlanRegistrationRegistrationId(meeting.getInvoice().getPlanRegistration().getRegistrationId())
                 .orElseThrow(() -> new IdInvalidException("Không tồn tại booking cho meeting này"));
         Plan plan = booking.getPlan();
-        String planName = new String();
-        if (plan instanceof PlanSession session) {
+        // Entity Plan dùng @Inheritance(JOINED). Khi gọi booking.getPlan(),
+        // Hibernate sẽ trả về một Proxy của class cha (Plan$HibernateProxy) chứ không
+        // phải object thực tế. Do đó, (plan instanceof PlanSession) sẽ luôn bằng false.
+        // Dùng Hibernate.unproxy() để "bóc" lớp proxy ra, lấy entity thật bên dưới.
+        Plan realPlan = (Plan) org.hibernate.Hibernate.unproxy(plan);
+
+        String planName = "";
+        if (realPlan instanceof PlanSession session) {
             planName = session.getSessionName();
-        } else if (plan instanceof PlanMentorship planMentorship) {
+        } else if (realPlan instanceof PlanMentorship planMentorship) {
             planName = planMentorship.getPlanName();
         }
 
