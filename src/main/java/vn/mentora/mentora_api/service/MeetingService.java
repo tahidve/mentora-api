@@ -267,6 +267,7 @@ public class MeetingService {
         dto.setStatus(meeting.getStatus());
         dto.setInvoiceId(meeting.getInvoice().getInvoiceId());
         dto.setMeetingId(meeting.getMeetingId());
+        dto.setBookingId(booking.getBookingId());
         dto.setMenteeName(
                 booking.getMentee().getUser().getFirstName() + " " + booking.getMentee().getUser().getLastName());
         dto.setMentorName(meeting.getSlot().getMentor().getUser().getFirstName() + " "

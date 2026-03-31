@@ -14,6 +14,8 @@ public class ResMeetingDTO {
 
     private Long meetingId;
 
+    private Long bookingId;
+
     private MeetingStatusEnum status;
 
     private String location;
