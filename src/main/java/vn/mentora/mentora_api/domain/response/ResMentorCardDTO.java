@@ -17,4 +17,5 @@ public class ResMentorCardDTO {
     private int totalReviews;
     private List<String> skills; // top 3
     private List<String> badges;
+    private List<String> languages;
 }

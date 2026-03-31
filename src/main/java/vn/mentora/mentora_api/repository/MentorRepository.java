@@ -26,4 +26,7 @@ public interface MentorRepository extends JpaRepository<Mentor, Long>, JpaSpecif
             OR LOWER(m.bio) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
     Page<Mentor> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT DISTINCT l FROM Mentor m JOIN m.languages l ORDER BY l")
+    List<String> findDistinctLanguages();
 }

@@ -271,6 +271,7 @@ public class MentorService {
                 .findFirst()
                 .orElse(null);
         mentorCard.setCompany(company);
+        mentorCard.setLanguages(mentor.getLanguages());
 
         return mentorCard;
     }

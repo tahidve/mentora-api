@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import vn.mentora.mentora_api.domain.Skill;
 import vn.mentora.mentora_api.domain.response.ResAvailableFilterDTO;
+import vn.mentora.mentora_api.repository.MentorRepository;
 import vn.mentora.mentora_api.repository.SkillRepository;
 import vn.mentora.mentora_api.repository.UserRepository;
 
@@ -14,19 +15,22 @@ import vn.mentora.mentora_api.repository.UserRepository;
 public class FilterService {
     private final SkillRepository skillRepository;
     private final UserRepository userRepository;
+    private final MentorRepository mentorRepository;
 
-    public FilterService(SkillRepository skillRepository, UserRepository userRepository) {
+    public FilterService(SkillRepository skillRepository, UserRepository userRepository,
+            MentorRepository mentorRepository) {
         this.skillRepository = skillRepository;
         this.userRepository = userRepository;
+        this.mentorRepository = mentorRepository;
     }
 
     public ResAvailableFilterDTO getAvailableFilters() {
         ResAvailableFilterDTO dto = new ResAvailableFilterDTO();
 
-        // 1. Countries
+        // Countries
         dto.setCountries(userRepository.findDistinctCountries());
 
-        // 2. Skills + mentorCount
+        // Skills + mentorCount
         List<Object[]> rawSkills = skillRepository.findAllWithMentorCount();
         List<ResAvailableFilterDTO.SkillOption> skills = new ArrayList<>();
         for (Object[] row : rawSkills) {
@@ -39,6 +43,9 @@ public class FilterService {
             skills.add(option);
         }
         dto.setSkills(skills);
+
+        // Languages, distinct từ tất cả mentor
+        dto.setLanguages(mentorRepository.findDistinctLanguages());
 
         return dto;
     }
