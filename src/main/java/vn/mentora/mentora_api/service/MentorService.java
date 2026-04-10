@@ -139,7 +139,7 @@ public class MentorService {
         String filename = this.fileService.store(file);
 
         // Lưu URL vào Mentor (chỉ tên file, FE ghép với base URL)
-        mentor.setAvatarUrl(filename);
+        mentor.getUser().setAvatarUrl(filename);
         mentorRepository.save(mentor);
 
         return filename;
@@ -149,7 +149,7 @@ public class MentorService {
         ResMentorProfileDTO dto = new ResMentorProfileDTO();
         dto.setId(mentor.getMentorId());
         dto.setName(mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName());
-        dto.setAvatarUrl(mentor.getAvatarUrl());
+        dto.setAvatarUrl(mentor.getUser().getAvatarUrl());
         dto.setBio(mentor.getBio());
         dto.setHeadline(mentor.getHeadline());
         dto.setResponseTime(mentor.getResponseTime());
@@ -246,7 +246,7 @@ public class MentorService {
     public ResMentorCardDTO convertToCardDTO(Mentor mentor) {
         ResMentorCardDTO mentorCard = new ResMentorCardDTO();
         mentorCard.setId(mentor.getMentorId());
-        mentorCard.setAvatarUrl(mentor.getAvatarUrl());
+        mentorCard.setAvatarUrl(mentor.getUser().getAvatarUrl());
         mentorCard.setHeadline(mentor.getHeadline());
         mentorCard.setName(mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName());
         mentorCard.setBadges(this.computeBadges(mentor));

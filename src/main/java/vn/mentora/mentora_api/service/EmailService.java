@@ -47,7 +47,7 @@ public class EmailService {
 
     @Async("emailExecutor")
     public void sendOtpEmail(String to, String name, String otp) {
-        sendEmail(to, "Verify Your Email - Mentoria", "otp-verification",
+        sendEmail(to, "Verify Your Email - Mentora", "otp-verification",
                 Map.of("name", name, "otp", otp));
     }
 

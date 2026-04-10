@@ -21,7 +21,6 @@ public class Mentor {
     private String bio;
     private String headline;
     private String cvUrl;
-    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
     private ResponseTimeEnum responseTime;
