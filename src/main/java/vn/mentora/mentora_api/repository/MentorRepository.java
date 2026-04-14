@@ -16,6 +16,9 @@ import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 public interface MentorRepository extends JpaRepository<Mentor, Long>, JpaSpecificationExecutor<Mentor> {
     List<Mentor> findByUserStatus(UserStatusEnum status);
 
+    // Admin GET /mentors/pending (paginated)
+    Page<Mentor> findByUserStatus(UserStatusEnum status, Pageable pageable);
+
     Optional<Mentor> findByUserEmail(String email);
 
     @Query("""
