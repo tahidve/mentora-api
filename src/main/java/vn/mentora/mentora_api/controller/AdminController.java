@@ -6,8 +6,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import vn.mentora.mentora_api.domain.response.ResAdminMenteeDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminMentorDTO;
@@ -41,9 +44,15 @@ public class AdminController {
     }
 
     @GetMapping("/mentors")
-    @ApiMessage("fetch mentor detail success")
+    @ApiMessage("fetch all mentors success")
     public ResponseEntity<ResultPaginationDTO> getAllMentors(Pageable pageable) {
         return ResponseEntity.ok(this.adminService.getAllMentors(pageable));
+    }
+
+    @GetMapping("/mentors/pending")
+    @ApiMessage("fetch mentor pending success")
+    public ResponseEntity<ResultPaginationDTO> getPendingMentors(Pageable pageable) {
+        return ResponseEntity.ok(this.adminService.getPendingMentors(pageable));
     }
 
     @GetMapping("/mentors/{id}")
@@ -58,5 +67,21 @@ public class AdminController {
     public ResponseEntity<ResAdminMenteeDTO> toggleBanMentee(@PathVariable("id") Long id)
             throws IdInvalidException {
         return ResponseEntity.ok(this.adminService.toggleBanMentee(id));
+    }
+
+    @PutMapping("/mentors/{id}/approve")
+    @ApiMessage("approve mentor success")
+    public ResponseEntity<ResAdminMentorDTO> approveMentor(@PathVariable("id") Long id)
+            throws IdInvalidException {
+        return ResponseEntity.ok(this.adminService.approveMentor(id));
+    }
+
+    @PutMapping("/mentors/{id}/reject")
+    @ApiMessage("reject mentor success")
+    public ResponseEntity<ResAdminMentorDTO> rejectMentor(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody vn.mentora.mentora_api.domain.request.ReqAdminReviewMentorDTO dto)
+            throws IdInvalidException {
+        return ResponseEntity.ok(this.adminService.rejectMentor(id, dto));
     }
 }

@@ -121,6 +121,77 @@ public class AdminService {
         return this.convertToMentorDTO(mentor);
     }
 
+    public ResultPaginationDTO getPendingMentors(Pageable pageable) {
+        Page<Mentor> page = this.mentorRepository.findByUserStatus(UserStatusEnum.PENDING, pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setPages(page.getTotalPages());
+        meta.setTotal(page.getTotalElements());
+
+        result.setMeta(meta);
+        List<Mentor> mentors = page.getContent();
+        List<ResAdminMentorDTO> mentorDTOs = new ArrayList<>();
+        for (Mentor mentor : mentors) {
+            mentorDTOs.add(this.convertToMentorDTO(mentor));
+        }
+        result.setResult(mentorDTOs);
+
+        return result;
+    }
+
+    @Transactional
+    public ResAdminMentorDTO approveMentor(Long mentorId) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
+
+        if (mentor.getRejectedAt() != null) {
+            throw new IdInvalidException("Hồ sơ này đang chờ Mentor cập nhật vì đã bị từ chối trước đó.");
+        }
+
+        if (mentor.getUser().getStatus() != UserStatusEnum.PENDING) {
+            throw new IdInvalidException("Mentor không ở trạng thái chờ duyệt");
+        }
+
+        User user = mentor.getUser();
+        user.setStatus(UserStatusEnum.ACTIVE);
+
+        mentor.setRejectionReason(null);
+        mentor.setRejectedAt(null);
+
+        this.userRepository.save(user);
+        this.mentorRepository.save(mentor);
+
+        System.out.println("[MOCK EMAIL] Email " + user.getEmail() + " được duyệt đã được gửi");
+
+        return this.convertToMentorDTO(mentor);
+    }
+
+    @Transactional
+    public ResAdminMentorDTO rejectMentor(Long mentorId, vn.mentora.mentora_api.domain.request.ReqAdminReviewMentorDTO dto) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
+
+        if (mentor.getRejectedAt() != null) {
+            throw new IdInvalidException("Hồ sơ này đang chờ Mentor cập nhật vì đã bị từ chối trước đó.");
+        }
+
+        if (mentor.getUser().getStatus() != UserStatusEnum.PENDING) {
+            throw new IdInvalidException("Mentor không ở trạng thái chờ duyệt");
+        }
+
+        mentor.setRejectionReason(dto.getReason());
+        mentor.setRejectedAt(java.time.Instant.now());
+        
+        this.mentorRepository.save(mentor);
+
+        System.out.println("[MOCK EMAIL] Yêu cầu từ chối " + mentor.getUser().getEmail() + " đã được gửi, lý do: " + dto.getReason());
+        return this.convertToMentorDTO(mentor);
+    }
+
     private ResAdminMenteeDTO convertToMenteeDTO(Mentee mentee) {
         ResAdminMenteeDTO dto = new ResAdminMenteeDTO();
         dto.setMenteeId(mentee.getMenteeId());
@@ -175,6 +246,10 @@ public class AdminService {
             rating = (double) mentor.getTotalStars() / mentor.getTotalReviews();
         }
         dto.setRating(rating);
+
+        dto.setRejectionReason(mentor.getRejectionReason());
+        dto.setRejectedAt(mentor.getRejectedAt());
+
         return dto;
     }
 }

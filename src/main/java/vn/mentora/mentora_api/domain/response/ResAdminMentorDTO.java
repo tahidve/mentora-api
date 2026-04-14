@@ -25,4 +25,6 @@ public class ResAdminMentorDTO {
     private int totalMeetings;
     private List<String> skills;
     private Instant createdAt;
+    private String rejectionReason;
+    private Instant rejectedAt;
 }

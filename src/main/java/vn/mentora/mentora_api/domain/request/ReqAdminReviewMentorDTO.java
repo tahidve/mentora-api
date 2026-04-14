@@ -8,8 +8,6 @@ import lombok.Setter;
 @Setter
 public class ReqAdminReviewMentorDTO {
 
-    @NotBlank(message = "action không được để trống (ACCEPT hoặc REJECT)")
-    private String action;
-
+    @NotBlank(message = "Lý do từ chối không được để trống")
     private String reason;
 }

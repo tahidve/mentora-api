@@ -22,6 +22,11 @@ public class Mentor {
     private String headline;
     private String cvUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    private java.time.Instant rejectedAt;
+
     @Enumerated(EnumType.STRING)
     private ResponseTimeEnum responseTime;
 
