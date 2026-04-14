@@ -12,6 +12,7 @@ import vn.mentora.mentora_api.domain.response.ResAdminMenteeDTO;
 import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 import vn.mentora.mentora_api.repository.BookingRepository;
 import vn.mentora.mentora_api.repository.MenteeRepository;
+import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 @Service
 public class AdminService {
@@ -45,6 +46,12 @@ public class AdminService {
         result.setResult(dtoList);
 
         return result;
+    }
+
+    public ResAdminMenteeDTO getMenteeDetail(Long menteeId) throws IdInvalidException {
+        Mentee mentee = this.menteeRepository.findById(menteeId)
+                .orElseThrow(() -> new IdInvalidException("Mentee không tồn tại"));
+        return this.convertToMenteeDTO(mentee);
     }
 
     private ResAdminMenteeDTO convertToMenteeDTO(Mentee mentee) {
