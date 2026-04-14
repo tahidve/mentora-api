@@ -117,6 +117,17 @@ public class MentorController {
         return ResponseEntity.ok(filename);
     }
 
+    // Mentor update cv
+    @PostMapping("/mentors/me/cv")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Mentor upload CV success")
+    public ResponseEntity<String> uploadCV(@RequestParam("file") MultipartFile file)
+            throws IdInvalidException, java.io.IOException {
+        String email = SecurityUtil.getCurrentUserLogin().orElseThrow(() -> new IdInvalidException("Invalid login"));
+        String filename = this.mentorService.uploadCV(email, file);
+        return ResponseEntity.ok(filename);
+    }
+
     // Mentor update skills
     @PutMapping("/mentors/me/skills")
     @PreAuthorize("hasAuthority('MENTOR')")

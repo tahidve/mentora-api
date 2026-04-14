@@ -13,4 +13,5 @@ public class ReqUpdateMentorDTO {
     private List<Long> skillIds;
     private String country;
     private String timezone;
+    private String cvUrl;
 }

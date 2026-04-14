@@ -14,7 +14,7 @@ public class StaticResourceConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Map tất cả request bắt đầu bằng /uploads/vào thư mục chứa ảnh
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations(baseUri);
+        registry.addResourceHandler("/uploads/**") // client gọi url
+                .addResourceLocations(baseUri); // path trên server
     }
 }

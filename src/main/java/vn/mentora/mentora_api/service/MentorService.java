@@ -136,10 +136,22 @@ public class MentorService {
         Mentor mentor = this.getMentorByEmail(email);
 
         // Gọi FileService để lưu file, lấy về uniqueFilename
-        String filename = this.fileService.store(file);
+        String filename = this.fileService.store(file, "avatars");
 
         // Lưu URL vào Mentor (chỉ tên file, FE ghép với base URL)
         mentor.getUser().setAvatarUrl(filename);
+        mentorRepository.save(mentor);
+
+        return filename;
+    }
+
+    @Transactional
+    public String uploadCV(String email, MultipartFile file) throws IdInvalidException, IOException {
+        Mentor mentor = this.getMentorByEmail(email);
+
+        String filename = this.fileService.store(file, "cvs");
+
+        mentor.setCvUrl(filename);
         mentorRepository.save(mentor);
 
         return filename;
