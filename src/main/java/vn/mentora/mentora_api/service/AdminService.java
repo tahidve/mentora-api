@@ -115,6 +115,12 @@ public class AdminService {
         return result;
     }
 
+    public ResAdminMentorDTO getMentorDetail(Long mentorId) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
+        return this.convertToMentorDTO(mentor);
+    }
+
     private ResAdminMenteeDTO convertToMenteeDTO(Mentee mentee) {
         ResAdminMenteeDTO dto = new ResAdminMenteeDTO();
         dto.setMenteeId(mentee.getMenteeId());

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import vn.mentora.mentora_api.domain.response.ResAdminMenteeDTO;
+import vn.mentora.mentora_api.domain.response.ResAdminMentorDTO;
 import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 import vn.mentora.mentora_api.service.AdminService;
@@ -43,6 +44,13 @@ public class AdminController {
     @ApiMessage("fetch mentor detail success")
     public ResponseEntity<ResultPaginationDTO> getAllMentors(Pageable pageable) {
         return ResponseEntity.ok(this.adminService.getAllMentors(pageable));
+    }
+
+    @GetMapping("/mentors/{id}")
+    @ApiMessage("fetch mentor detail success")
+    public ResponseEntity<ResAdminMentorDTO> getMentorById(@PathVariable("id") Long id)
+            throws IdInvalidException {
+        return ResponseEntity.ok(this.adminService.getMentorDetail(id));
     }
 
     @PatchMapping("/mentees/{id}/ban")
