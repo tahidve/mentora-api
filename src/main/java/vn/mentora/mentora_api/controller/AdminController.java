@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,5 +37,12 @@ public class AdminController {
     public ResponseEntity<ResAdminMenteeDTO> getMenteeById(@PathVariable("id") Long id)
             throws IdInvalidException {
         return ResponseEntity.ok(this.adminService.getMenteeDetail(id));
+    }
+
+    @PatchMapping("/mentees/{id}/ban")
+    @ApiMessage("toggle ban/unban mentee success")
+    public ResponseEntity<ResAdminMenteeDTO> toggleBanMentee(@PathVariable("id") Long id)
+            throws IdInvalidException {
+        return ResponseEntity.ok(this.adminService.toggleBanMentee(id));
     }
 }
