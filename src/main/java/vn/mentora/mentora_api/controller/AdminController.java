@@ -39,6 +39,12 @@ public class AdminController {
         return ResponseEntity.ok(this.adminService.getMenteeDetail(id));
     }
 
+    @GetMapping("/mentors")
+    @ApiMessage("fetch mentor detail success")
+    public ResponseEntity<ResultPaginationDTO> getAllMentors(Pageable pageable) {
+        return ResponseEntity.ok(this.adminService.getAllMentors(pageable));
+    }
+
     @PatchMapping("/mentees/{id}/ban")
     @ApiMessage("toggle ban/unban mentee success")
     public ResponseEntity<ResAdminMenteeDTO> toggleBanMentee(@PathVariable("id") Long id)
