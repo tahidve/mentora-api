@@ -15,6 +15,8 @@ public class ResAdminInvoiceDTO {
 
     private Long invoiceId;
     private String menteeName;
+    private String menteeEmail;
+    private String mentorName;
     private BigDecimal amountSubtotal;
     private BigDecimal amountTotal;
     private PaymentStatusEnum paymentStatus;

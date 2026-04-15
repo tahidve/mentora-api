@@ -9,14 +9,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.jpa.domain.Specification;
+import vn.mentora.mentora_api.domain.Booking;
+import vn.mentora.mentora_api.domain.Invoice;
 import vn.mentora.mentora_api.domain.Mentee;
 import vn.mentora.mentora_api.domain.Mentor;
 import vn.mentora.mentora_api.domain.Skill;
 import vn.mentora.mentora_api.domain.User;
+import vn.mentora.mentora_api.domain.response.ResAdminInvoiceDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminMenteeDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminMentorDTO;
 import vn.mentora.mentora_api.domain.response.ResultPaginationDTO;
 import vn.mentora.mentora_api.repository.BookingRepository;
+import vn.mentora.mentora_api.repository.InvoiceRepository;
 import vn.mentora.mentora_api.repository.MenteeRepository;
 import vn.mentora.mentora_api.repository.MentorRepository;
 import vn.mentora.mentora_api.repository.UserRepository;
@@ -30,16 +35,19 @@ public class AdminService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final MentorRepository mentorRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public AdminService(
             MenteeRepository menteeRepository,
             BookingRepository bookingRepository,
             UserRepository userRepository,
-            MentorRepository mentorRepository) {
+            MentorRepository mentorRepository,
+            InvoiceRepository invoiceRepository) {
         this.menteeRepository = menteeRepository;
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.mentorRepository = mentorRepository;
+        this.invoiceRepository = invoiceRepository;
     }
 
     public ResultPaginationDTO getAllMentees(Pageable pageable) {
@@ -91,6 +99,27 @@ public class AdminService {
 
         this.userRepository.save(user);
         return this.convertToMenteeDTO(mentee);
+    }
+
+    @Transactional
+    public ResAdminMentorDTO toggleBanMentor(Long mentorId) throws IdInvalidException {
+        Mentor mentor = this.mentorRepository.findById(mentorId)
+                .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
+
+        User user = mentor.getUser();
+
+        if (user.getStatus() == UserStatusEnum.BANNED) {
+            user.setStatus(UserStatusEnum.ACTIVE);
+        } else if (user.getStatus() == UserStatusEnum.ACTIVE) {
+            user.setStatus(UserStatusEnum.BANNED);
+            user.setRefreshToken(null);
+        } else {
+            throw new IdInvalidException(
+                    "Chỉ có thể ban/unban tài khoản ACTIVE hoặc BANNED (status hiện tại: " + user.getStatus() + ")");
+        }
+
+        this.userRepository.save(user);
+        return this.convertToMentorDTO(mentor);
     }
 
     public ResultPaginationDTO getAllMentors(Pageable pageable) {
@@ -171,7 +200,8 @@ public class AdminService {
     }
 
     @Transactional
-    public ResAdminMentorDTO rejectMentor(Long mentorId, vn.mentora.mentora_api.domain.request.ReqAdminReviewMentorDTO dto) throws IdInvalidException {
+    public ResAdminMentorDTO rejectMentor(Long mentorId,
+            vn.mentora.mentora_api.domain.request.ReqAdminReviewMentorDTO dto) throws IdInvalidException {
         Mentor mentor = this.mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại"));
 
@@ -185,11 +215,66 @@ public class AdminService {
 
         mentor.setRejectionReason(dto.getReason());
         mentor.setRejectedAt(java.time.Instant.now());
-        
+
         this.mentorRepository.save(mentor);
 
-        System.out.println("[MOCK EMAIL] Yêu cầu từ chối " + mentor.getUser().getEmail() + " đã được gửi, lý do: " + dto.getReason());
+        System.out.println("[MOCK EMAIL] Yêu cầu từ chối " + mentor.getUser().getEmail() + " đã được gửi, lý do: "
+                + dto.getReason());
         return this.convertToMentorDTO(mentor);
+    }
+
+    public ResultPaginationDTO getAllInvoices(Specification<Invoice> spec, Pageable pageable) {
+        Page<Invoice> page = this.invoiceRepository.findAll(spec, pageable);
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(pageable.getPageNumber() + 1);
+        meta.setPageSize(pageable.getPageSize());
+        meta.setPages(page.getTotalPages());
+        meta.setTotal(page.getTotalElements());
+        result.setMeta(meta);
+
+        List<ResAdminInvoiceDTO> dtoList = new ArrayList<>();
+        for (Invoice invoice : page.getContent()) {
+            dtoList.add(convertToInvoiceDTO(invoice));
+        }
+        result.setResult(dtoList);
+
+        return result;
+    }
+
+    private ResAdminInvoiceDTO convertToInvoiceDTO(Invoice invoice) {
+        ResAdminInvoiceDTO dto = new ResAdminInvoiceDTO();
+        dto.setInvoiceId(invoice.getInvoiceId());
+        dto.setPaymentStatus(invoice.getPaymentStatus());
+        dto.setAmountSubtotal(invoice.getAmountSubtotal());
+        dto.setAmountTotal(invoice.getAmountTotal());
+        dto.setPaymentMethod(invoice.getPaymentMethod());
+        dto.setPaidTime(invoice.getPaidTime());
+        dto.setCreatedAt(invoice.getCreatedAt());
+
+        // Mentee info
+        if (invoice.getMentee() != null && invoice.getMentee().getUser() != null) {
+            User menteeUser = invoice.getMentee().getUser();
+            dto.setMenteeName(menteeUser.getFirstName() + " " + menteeUser.getLastName());
+            dto.setMenteeEmail(menteeUser.getEmail());
+        }
+
+        // Lấy mentorName: Invoice → PlanRegistration → Booking → Plan → Mentor
+        // Vì PlanRegistration không có FK thẳng tới Mentor (theo EERD)
+        if (invoice.getPlanRegistration() != null) {
+            java.util.Optional<Booking> bookingOpt = this.bookingRepository
+                    .findByPlanRegistrationRegistrationId(invoice.getPlanRegistration().getRegistrationId());
+            if (bookingOpt.isPresent() && bookingOpt.get().getPlan() != null) {
+                Mentor mentor = bookingOpt.get().getPlan().getMentor();
+                if (mentor != null && mentor.getUser() != null) {
+                    User mentorUser = mentor.getUser();
+                    dto.setMentorName(mentorUser.getFirstName() + " " + mentorUser.getLastName());
+                }
+            }
+        }
+
+        return dto;
     }
 
     private ResAdminMenteeDTO convertToMenteeDTO(Mentee mentee) {
