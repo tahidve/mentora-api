@@ -67,8 +67,8 @@ public class AuthService {
         mentee.setGoal(dto.getGoal());
         this.menteeRepository.save(mentee);
 
-        // send verify email
-        this.emailService.sendOtpEmail(dto.getEmail(), dto.getFirstName(), otp);
+        // TODO: gửi OTP email — implement lại EmailService.sendOtpEmail()
+        // this.emailService.sendOtpEmail(dto.getEmail(), dto.getFirstName(), otp);
 
     }
 
@@ -100,7 +100,8 @@ public class AuthService {
         mentor.setUser(savedUser);
         this.mentorRepository.save(mentor);
 
-        this.emailService.sendOtpEmail(dto.getEmail(), dto.getFirstName(), otp);
+        // TODO: gửi OTP email — implement lại EmailService.sendOtpEmail() (Phase 16)
+        // this.emailService.sendOtpEmail(dto.getEmail(), dto.getFirstName(), otp);
     }
 
     public User verifyOtp(ReqVerifyOtpDTO dto) throws IdInvalidException {
