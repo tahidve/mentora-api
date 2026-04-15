@@ -24,9 +24,11 @@ import vn.mentora.mentora_api.repository.BookingRepository;
 import vn.mentora.mentora_api.repository.InvoiceRepository;
 import vn.mentora.mentora_api.repository.MenteeRepository;
 import vn.mentora.mentora_api.repository.MentorRepository;
+import vn.mentora.mentora_api.repository.MeetingRepository;
 import vn.mentora.mentora_api.repository.UserRepository;
 import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
+import vn.mentora.mentora_api.domain.response.ResAdminStatsDTO;
 
 @Service
 public class AdminService {
@@ -36,18 +38,30 @@ public class AdminService {
     private final UserRepository userRepository;
     private final MentorRepository mentorRepository;
     private final InvoiceRepository invoiceRepository;
+    private final MeetingRepository meetingRepository;
 
     public AdminService(
             MenteeRepository menteeRepository,
             BookingRepository bookingRepository,
             UserRepository userRepository,
             MentorRepository mentorRepository,
-            InvoiceRepository invoiceRepository) {
+            InvoiceRepository invoiceRepository,
+            MeetingRepository meetingRepository) {
         this.menteeRepository = menteeRepository;
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.mentorRepository = mentorRepository;
         this.invoiceRepository = invoiceRepository;
+        this.meetingRepository = meetingRepository;
+    }
+
+    public ResAdminStatsDTO getOverallStats() {
+        long totalMentees = this.menteeRepository.count();
+        long totalMentors = this.mentorRepository.count();
+        long totalMeetings = this.meetingRepository.count();
+        java.math.BigDecimal totalRevenue = this.invoiceRepository.sumTotalRevenue();
+
+        return new ResAdminStatsDTO(totalMentees, totalMentors, totalMeetings, totalRevenue);
     }
 
     public ResultPaginationDTO getAllMentees(Pageable pageable) {

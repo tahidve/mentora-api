@@ -15,6 +15,7 @@ import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 
 import vn.mentora.mentora_api.domain.Invoice;
+import vn.mentora.mentora_api.domain.response.ResAdminStatsDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminInvoiceDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminMenteeDTO;
 import vn.mentora.mentora_api.domain.response.ResAdminMentorDTO;
@@ -100,6 +101,12 @@ public class AdminController {
     public ResponseEntity<ResultPaginationDTO> getAllInvoices(
             @Filter Specification<Invoice> spec, Pageable pageable) {
         return ResponseEntity.ok(this.adminService.getAllInvoices(spec, pageable));
+    }
+
+    @GetMapping("/stats")
+    @ApiMessage("fetch admin stats success")
+    public ResponseEntity<ResAdminStatsDTO> getOverallStats() {
+        return ResponseEntity.ok(this.adminService.getOverallStats());
     }
 
 }
