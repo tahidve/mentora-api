@@ -167,4 +167,14 @@ public class MentorController {
         return ResponseEntity.ok(response);
     }
 
+    // Mentor gửi lại hồ sơ sau khi bị Admin từ chối
+    @PostMapping("/mentors/me/resubmit")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Resubmit profile success")
+    public ResponseEntity<ResMentorProfileDTO> resubmitProfile() throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Invalid login"));
+        return ResponseEntity.ok(this.mentorService.resubmitProfile(email));
+    }
+
 }

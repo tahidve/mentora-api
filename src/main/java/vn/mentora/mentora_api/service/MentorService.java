@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import vn.mentora.mentora_api.repository.*;
 import vn.mentora.mentora_api.util.SecurityUtil;
 import vn.mentora.mentora_api.util.constant.ResponseTimeEnum;
+import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 @Service
@@ -155,6 +156,29 @@ public class MentorService {
         mentorRepository.save(mentor);
 
         return filename;
+    }
+
+    public ResMentorProfileDTO resubmitProfile(String email) throws IdInvalidException {
+        Mentor mentor = this.getMentorByEmail(email);
+
+        // Chỉ Mentor đang PENDING mới cần gửi lại
+        if (mentor.getUser().getStatus() != UserStatusEnum.PENDING) {
+            throw new IdInvalidException("Hồ sơ của bạn không ở trạng thái cần gửi lại");
+        }
+
+        // Chỉ gửi lại khi đã bị reject (rejectedAt != null)
+        if (mentor.getRejectedAt() == null) {
+            throw new IdInvalidException("Hồ sơ của bạn chưa bị từ chối");
+        }
+
+        // Clear cờ rejection
+        mentor.setRejectedAt(null);
+        mentor.setRejectionReason(null);
+        this.mentorRepository.save(mentor);
+
+        System.out.println("[MOCK EMAIL] Mentor " + email + " đã gửi lại hồ sơ, mời Admin xem xét");
+
+        return this.convertToProfileDTO(mentor);
     }
 
     private ResMentorProfileDTO convertToProfileDTO(Mentor mentor) {
