@@ -201,6 +201,7 @@ public class MentorService {
         dto.setRejectedAt(mentor.getRejectedAt());
         dto.setRejectionReason(mentor.getRejectionReason());
         dto.setAvatarUrl(mentor.getUser().getAvatarUrl());
+        dto.setCvUrl(mentor.getCvUrl());
         dto.setBio(mentor.getBio());
         dto.setHeadline(mentor.getHeadline());
         dto.setResponseTime(mentor.getResponseTime());

@@ -17,6 +17,7 @@ public class ResMentorProfileDTO {
     private Instant rejectedAt;
     private String rejectionReason;
     private String avatarUrl;
+    private String cvUrl;
     private String bio;
     private String headline;
     private ResponseTimeEnum responseTime;

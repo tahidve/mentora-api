@@ -20,6 +20,7 @@ public class ResAdminMentorDTO {
     private UserStatusEnum status;
     private String headline;
     private String bio;
+    private String cvUrl;
     private double rating;
     private int totalReviews;
     private int totalMeetings;
