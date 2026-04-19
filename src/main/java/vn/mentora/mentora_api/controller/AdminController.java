@@ -5,7 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,14 +67,14 @@ public class AdminController {
         return ResponseEntity.ok(this.adminService.getMentorDetail(id));
     }
 
-    @PatchMapping("/mentees/{id}/ban")
+    @PutMapping("/mentees/{id}/ban")
     @ApiMessage("toggle ban/unban mentee success")
     public ResponseEntity<ResAdminMenteeDTO> toggleBanMentee(@PathVariable("id") Long id)
             throws IdInvalidException {
         return ResponseEntity.ok(this.adminService.toggleBanMentee(id));
     }
 
-    @PatchMapping("/mentors/{id}/ban")
+    @PutMapping("/mentors/{id}/ban")
     @ApiMessage("toggle ban/unban mentor sucsess")
     public ResponseEntity<ResAdminMentorDTO> toggleBanMentor(@PathVariable("id") Long id)
             throws IdInvalidException {

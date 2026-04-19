@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.mentora.mentora_api.util.constant.RoleEnum;
+import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 
 @Getter
 @Setter
@@ -24,6 +25,7 @@ public class ResLoginDTO {
         private String firstName;
         private String lastName;
         private RoleEnum role;
+        private UserStatusEnum status;
         private String avatarUrl;
     }
 

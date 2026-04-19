@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -37,19 +38,28 @@ public class MentorService {
     private final WorkForRepository workForRepository;
     private final SkillRepository skillRepository;
     private final FileService fileService;
+    private final EmailService emailService;
+
+    // Lấy email admin từ application.properties (để báo Admin khi Mentor resubmit)
+    // @Value không đưa vào constructor — Spring inject trực tiếp vào field sau khi
+    // tạo Bean.
+    @Value("${app.admin.email}")
+    private String adminEmail;
 
     public MentorService(MentorRepository mentorRepository,
             CompanyRepository companyRepository,
             JobTitleRepository jobTitleRepository,
             WorkForRepository workForRepository,
             SkillRepository skillRepository,
-            FileService fileService) {
+            FileService fileService,
+            EmailService emailService) {
         this.mentorRepository = mentorRepository;
         this.companyRepository = companyRepository;
         this.jobTitleRepository = jobTitleRepository;
         this.workForRepository = workForRepository;
         this.skillRepository = skillRepository;
         this.fileService = fileService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -176,7 +186,9 @@ public class MentorService {
         mentor.setRejectionReason(null);
         this.mentorRepository.save(mentor);
 
-        System.out.println("[MOCK EMAIL] Mentor " + email + " đã gửi lại hồ sơ, mời Admin xem xét");
+        // Email Admin: Mentor gửi lại hồ sơ, mời xem xét
+        String mentorName = mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName();
+        this.emailService.sendMentorResubmitToAdmin(adminEmail, mentorName, email);
 
         return this.convertToProfileDTO(mentor);
     }
@@ -185,6 +197,9 @@ public class MentorService {
         ResMentorProfileDTO dto = new ResMentorProfileDTO();
         dto.setId(mentor.getMentorId());
         dto.setName(mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName());
+        dto.setStatus(mentor.getUser().getStatus());
+        dto.setRejectedAt(mentor.getRejectedAt());
+        dto.setRejectionReason(mentor.getRejectionReason());
         dto.setAvatarUrl(mentor.getUser().getAvatarUrl());
         dto.setBio(mentor.getBio());
         dto.setHeadline(mentor.getHeadline());

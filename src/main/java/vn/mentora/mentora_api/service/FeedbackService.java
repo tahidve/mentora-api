@@ -32,15 +32,18 @@ public class FeedbackService {
     private final MeetingRepository meetingRepository;
     private final MentorRepository mentorRepository;
     private final BookingRepository bookingRepository;
+    private final EmailService emailService;
 
     public FeedbackService(FeedbackRepository feedbackRepository,
             MeetingRepository meetingRepository,
             MentorRepository mentorRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository,
+            EmailService emailService) {
         this.feedbackRepository = feedbackRepository;
         this.meetingRepository = meetingRepository;
         this.mentorRepository = mentorRepository;
         this.bookingRepository = bookingRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -85,7 +88,16 @@ public class FeedbackService {
         mentor.setTotalReviews(mentor.getTotalReviews() + 1);
         this.mentorRepository.save(mentor);
 
-        return this.convertToDTO(feedback, mentee);
+        ResFeedbackDTO result = this.convertToDTO(feedback, mentee);
+
+        // Email Mentor: có đánh giá mới
+        String mentorName = mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName();
+        String menteeName = mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName();
+        this.emailService.sendFeedbackToMentor(
+                mentor.getUser().getEmail(), mentorName, menteeName,
+                dto.getStars(), dto.getContent());
+
+        return result;
     }
 
     public ResultPaginationDTO getFeedbacksByMentorId(Long mentorId, Pageable pageable) {

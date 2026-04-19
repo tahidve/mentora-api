@@ -39,6 +39,7 @@ public class AdminService {
     private final MentorRepository mentorRepository;
     private final InvoiceRepository invoiceRepository;
     private final MeetingRepository meetingRepository;
+    private final EmailService emailService;
 
     public AdminService(
             MenteeRepository menteeRepository,
@@ -46,13 +47,15 @@ public class AdminService {
             UserRepository userRepository,
             MentorRepository mentorRepository,
             InvoiceRepository invoiceRepository,
-            MeetingRepository meetingRepository) {
+            MeetingRepository meetingRepository,
+            EmailService emailService) {
         this.menteeRepository = menteeRepository;
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.mentorRepository = mentorRepository;
         this.invoiceRepository = invoiceRepository;
         this.meetingRepository = meetingRepository;
+        this.emailService = emailService;
     }
 
     public ResAdminStatsDTO getOverallStats() {
@@ -208,7 +211,9 @@ public class AdminService {
         this.userRepository.save(user);
         this.mentorRepository.save(mentor);
 
-        System.out.println("[MOCK EMAIL] Email " + user.getEmail() + " được duyệt đã được gửi");
+        // Email Mentor: hồ sơ được duyệt
+        String mentorName = user.getFirstName() + " " + user.getLastName();
+        this.emailService.sendMentorApproved(user.getEmail(), mentorName);
 
         return this.convertToMentorDTO(mentor);
     }
@@ -232,8 +237,10 @@ public class AdminService {
 
         this.mentorRepository.save(mentor);
 
-        System.out.println("[MOCK EMAIL] Yêu cầu từ chối " + mentor.getUser().getEmail() + " đã được gửi, lý do: "
-                + dto.getReason());
+        // Email Mentor: hồ sơ bị từ chối kèm lý do
+        String mentorName = mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName();
+        this.emailService.sendMentorRejected(mentor.getUser().getEmail(), mentorName, dto.getReason());
+
         return this.convertToMentorDTO(mentor);
     }
 

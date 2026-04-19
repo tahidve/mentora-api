@@ -84,8 +84,9 @@ public class AuthController {
         if (!user.isEmailVerified()) {
             throw new IdInvalidException("Vui lòng xác thực email trước khi đăng nhập!");
         }
-        if (user.getStatus() != UserStatusEnum.ACTIVE) {
-            throw new IdInvalidException("Tài khoản chưa được kích hoạt (status: " + user.getStatus() + ")");
+
+        if (user.getStatus() == UserStatusEnum.BANNED) {
+            throw new IdInvalidException("Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ Admin.");
         }
 
         ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin();
@@ -94,6 +95,7 @@ public class AuthController {
         userLogin.setFirstName(user.getFirstName());
         userLogin.setLastName(user.getLastName());
         userLogin.setRole(user.getRole());
+        userLogin.setStatus(user.getStatus());
         userLogin.setAvatarUrl(user.getAvatarUrl());
         ResLoginDTO res = new ResLoginDTO();
         res.setUser(userLogin);
@@ -141,7 +143,7 @@ public class AuthController {
         ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                 user.getUserId(), user.getEmail(),
                 user.getFirstName(), user.getLastName(),
-                user.getRole(), user.getAvatarUrl());
+                user.getRole(), user.getStatus(), user.getAvatarUrl());
 
         String newAccessToken = this.securityUtil.createAccessToken(
                 email, user.getRole().name(), userLogin);

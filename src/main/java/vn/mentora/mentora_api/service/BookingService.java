@@ -44,11 +44,13 @@ public class BookingService {
     private final PlanRegistrationRepository planRegistrationRepository;
     private final InvoiceRepository invoiceRepository;
     private final MeetingRepository meetingRepository;
+    private final EmailService emailService; // Thêm vào
 
     public BookingService(BookingRepository bookingRepository, MenteeRepository menteeRepository,
             PlanRepository planRepository, DiscountRepository discountRepository, SlotRepository slotRepository,
             DiscountService discountService, PlanRegistrationRepository planRegistrationRepository,
-            InvoiceRepository invoiceRepository, MeetingRepository meetingRepository) {
+            InvoiceRepository invoiceRepository, MeetingRepository meetingRepository,
+            EmailService emailService) {
         this.bookingRepository = bookingRepository;
         this.menteeRepository = menteeRepository;
         this.planRepository = planRepository;
@@ -58,6 +60,7 @@ public class BookingService {
         this.planRegistrationRepository = planRegistrationRepository;
         this.invoiceRepository = invoiceRepository;
         this.meetingRepository = meetingRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -157,6 +160,20 @@ public class BookingService {
         String mentorName = plan.getMentor().getUser().getFirstName() + " " + plan.getMentor().getUser().getLastName();
         res.setMentorName(mentorName);
 
+        // Email cho Mentor: báo có booking mới
+        String mentorEmail = plan.getMentor().getUser().getEmail();
+        this.emailService.sendBookingConfirmToMentor(
+                mentorEmail, mentorName,
+                mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName(),
+                res.getPlanName(), slot.getDate(), slot.getStartTime());
+
+        // Email cho Mentee: xác nhận booking thành công
+        this.emailService.sendBookingConfirmToMentee(
+                mentee.getUser().getEmail(),
+                mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName(),
+                mentorName, res.getPlanName(), slot.getDate(), slot.getStartTime(),
+                amountTotal);
+
         return res;
     }
 
@@ -230,6 +247,15 @@ public class BookingService {
         String mentorName = plan.getMentor().getUser().getFirstName() + " "
                 + plan.getMentor().getUser().getLastName();
         res.setMentorName(mentorName);
+
+        // Email Mentor: Mentee đã hủy
+        // Plan name đã được set ở trên (res.getPlanName())
+        this.emailService.sendBookingCancelledToMentor(
+                plan.getMentor().getUser().getEmail(),
+                mentorName,
+                mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName(),
+                res.getPlanName(),
+                meeting.getDate());
 
         return res;
     }

@@ -40,15 +40,17 @@ public class MeetingService {
     private final BookingRepository bookingRepository;
     private final InvoiceRepository invoiceRepository;
     private final MenteeRepository menteeRepository;
+    private final EmailService emailService;
 
     public MeetingService(MentorRepository mentorRepository, MeetingRepository meetingRepository,
             BookingRepository bookingRepository, InvoiceRepository invoiceRepository,
-            MenteeRepository menteeRepository) {
+            MenteeRepository menteeRepository, EmailService emailService) {
         this.meetingRepository = meetingRepository;
         this.mentorRepository = mentorRepository;
         this.bookingRepository = bookingRepository;
         this.invoiceRepository = invoiceRepository;
         this.menteeRepository = menteeRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -68,7 +70,19 @@ public class MeetingService {
         // set meeting location
         meeting.setLocation(location);
         meeting.setStatus(MeetingStatusEnum.SCHEDULED);
-        return meetingRepository.save(meeting);
+        Meeting saved = meetingRepository.save(meeting);
+
+        // Email cho Mentee: link họp đã sẵn sàng
+        String menteeName = meeting.getInvoice().getMentee().getUser().getFirstName() + " "
+                + meeting.getInvoice().getMentee().getUser().getLastName();
+        String mentorName = meeting.getSlot().getMentor().getUser().getFirstName() + " "
+                + meeting.getSlot().getMentor().getUser().getLastName();
+        this.emailService.sendMeetingLocationToMentee(
+                meeting.getInvoice().getMentee().getUser().getEmail(),
+                menteeName, mentorName, location,
+                meeting.getDate(), meeting.getStartTime());
+
+        return saved;
     }
 
     @Transactional
@@ -112,10 +126,19 @@ public class MeetingService {
 
         Mentor mentor = meeting.getSlot().getMentor();
         mentor.setTotalMeetings(mentor.getTotalMeetings() + 1);
-
         this.mentorRepository.save(mentor);
 
-        return this.meetingRepository.save(meeting);
+        Meeting saved = this.meetingRepository.save(meeting);
+
+        // buổi học hoàn thành, mời đánh giá (async)
+        String menteeName = meeting.getInvoice().getMentee().getUser().getFirstName() + " "
+                + meeting.getInvoice().getMentee().getUser().getLastName();
+        String mentorName = mentor.getUser().getFirstName() + " " + mentor.getUser().getLastName();
+        this.emailService.sendMeetingCompletedToMentee(
+                meeting.getInvoice().getMentee().getUser().getEmail(),
+                menteeName, mentorName, meeting.getDate());
+
+        return saved;
     }
 
     @Transactional
@@ -143,7 +166,18 @@ public class MeetingService {
         booking.setStatus(BookingStatusEnum.CANCELLED);
         this.bookingRepository.save(booking);
 
-        return this.meetingRepository.save(meeting);
+        Meeting saved = this.meetingRepository.save(meeting);
+
+        // Mentor đã hủy meeting
+        String menteeName = meeting.getInvoice().getMentee().getUser().getFirstName() + " "
+                + meeting.getInvoice().getMentee().getUser().getLastName();
+        String mentorName = meeting.getSlot().getMentor().getUser().getFirstName() + " "
+                + meeting.getSlot().getMentor().getUser().getLastName();
+        this.emailService.sendMeetingCancelledToMentee(
+                meeting.getInvoice().getMentee().getUser().getEmail(),
+                menteeName, mentorName, meeting.getDate(), meeting.getStartTime());
+
+        return saved;
     }
 
     public ResultPaginationDTO fetchMeetings(Specification spec, Pageable pageable) throws IdInvalidException {
