@@ -15,6 +15,7 @@ import vn.mentora.mentora_api.domain.response.ResSlotDTO;
 import vn.mentora.mentora_api.repository.MentorRepository;
 import vn.mentora.mentora_api.repository.SlotRepository;
 import vn.mentora.mentora_api.util.constant.SlotStatusEnum;
+import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 @Service
@@ -65,6 +66,11 @@ public class SlotService {
     public ResSlotDTO createSlot(String email, ReqCreateSlotDTO dto) throws IdInvalidException {
         Mentor mentor = this.mentorRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại!"));
+
+        // Chỉ Mentor ACTIVE mới được tạo Slot
+        if (mentor.getUser().getStatus() != UserStatusEnum.ACTIVE) {
+            throw new IdInvalidException("Tài khoản chưa được Admin duyệt. Bạn không thể tạo Slot khi chưa ACTIVE.");
+        }
 
         if (!dto.getStartTime().isBefore(dto.getEndTime())) {
             throw new IdInvalidException("Giờ bắt đầu phải trước giờ kết thúc!");

@@ -343,6 +343,7 @@ public class AdminService {
         dto.setHeadline(mentor.getHeadline());
         dto.setStatus(mentor.getUser().getStatus());
         dto.setCvUrl(mentor.getCvUrl());
+        dto.setAvatarUrl(mentor.getUser().getAvatarUrl());
         List<String> skills = new ArrayList<>();
         for (Skill skill : mentor.getSkills()) {
             skills.add(skill.getSkillName());

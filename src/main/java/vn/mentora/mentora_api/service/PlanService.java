@@ -23,6 +23,7 @@ import vn.mentora.mentora_api.repository.PlanMentorshipRepository;
 import vn.mentora.mentora_api.repository.PlanSessionRepository;
 import vn.mentora.mentora_api.util.constant.PlanStatusEnum;
 import vn.mentora.mentora_api.util.constant.PlanTypeEnum;
+import vn.mentora.mentora_api.util.constant.UserStatusEnum;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 @Service
@@ -45,6 +46,11 @@ public class PlanService {
         Mentor mentor = this.mentorRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại!"));
 
+        // Chỉ Mentor ACTIVE mới được tạo Plan
+        if (mentor.getUser().getStatus() != UserStatusEnum.ACTIVE) {
+            throw new IdInvalidException("Tài khoản chưa được Admin duyệt. Bạn không thể tạo Plan khi chưa ACTIVE.");
+        }
+
         // Kiểm tra trùng tên trong cùng 1 mentor
         if (planSessionRepository.existsBySessionNameAndMentorMentorId(dto.getSessionName(), mentor.getMentorId())) {
             throw new IdInvalidException("Bạn đã có session plan tên '" + dto.getSessionName() + "' rồi!");
@@ -65,6 +71,11 @@ public class PlanService {
     public ResPlanMentorshipDTO createMentorship(String email, ReqCreateMentorshipDTO dto) throws IdInvalidException {
         Mentor mentor = this.mentorRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IdInvalidException("Mentor không tồn tại!"));
+
+        // Chỉ Mentor ACTIVE mới được tạo Plan
+        if (mentor.getUser().getStatus() != UserStatusEnum.ACTIVE) {
+            throw new IdInvalidException("Tài khoản chưa được Admin duyệt. Bạn không thể tạo Plan khi chưa ACTIVE.");
+        }
 
         // Kiểm tra trùng tên trong cùng 1 mentor
         if (planMentorshipRepository.existsByPlanNameAndMentorMentorId(dto.getPlanName(), mentor.getMentorId())) {

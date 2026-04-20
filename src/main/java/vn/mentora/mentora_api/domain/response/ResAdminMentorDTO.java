@@ -21,6 +21,7 @@ public class ResAdminMentorDTO {
     private String headline;
     private String bio;
     private String cvUrl;
+    private String avatarUrl;
     private double rating;
     private int totalReviews;
     private int totalMeetings;
