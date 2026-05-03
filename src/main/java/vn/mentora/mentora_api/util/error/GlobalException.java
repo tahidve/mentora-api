@@ -27,6 +27,17 @@ public class GlobalException {
     }
 
     @ExceptionHandler(value = {
+            org.springframework.security.authentication.BadCredentialsException.class
+    })
+    public ResponseEntity<RestResponse<Object>> handleBadCredentialsException(Exception ex) {
+        RestResponse<Object> res = new RestResponse<>();
+        res.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        res.setError("Exception occurs...");
+        res.setMessage("Tài khoản hoặc mật khẩu không chính xác");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+    }
+
+    @ExceptionHandler(value = {
             MethodArgumentNotValidException.class
     })
     public ResponseEntity<RestResponse<Object>> handleValidationException(MethodArgumentNotValidException ex) {
