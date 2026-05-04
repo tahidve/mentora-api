@@ -1,8 +1,10 @@
 package vn.mentora.mentora_api.domain;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,5 +47,12 @@ public class Meeting {
     private LocalTime startTime; // snapshot từ slot
     private LocalTime endTime; // snapshot từ slot
     private LocalDate date; // snapshot từ slot
+
+    private Instant completedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String disputeReason;
+
+    private Instant disputedAt;
 
 }

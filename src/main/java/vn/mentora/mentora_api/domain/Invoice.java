@@ -42,7 +42,7 @@ public class Invoice {
     @Column(nullable = false)
     private PaymentStatusEnum paymentStatus = PaymentStatusEnum.PENDING;
 
-    private String currency = "VND";
+    private String currency = "USD";
 
     @Column(precision = 12, scale = 2)
     private BigDecimal amountSubtotal;
@@ -54,6 +54,18 @@ public class Invoice {
 
     @Column(columnDefinition = "TEXT")
     private String note;
+
+    private String stripePaymentIntentId; // Lưu hồ sơ dòng tiền
+    private String stripeCheckoutSessionId; // checkout session
+    private String stripeTransferId; // stripeTransferId lưu biên lai chuyển khoản từ hệ thống sang cho mentor
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal platformFee; // phí sàn
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal netAmount; // % Mentor nhận
+
+    private Instant transferredAt; // Thời điểm transfer tiền cho Mentor
 
     private Instant createdAt;
 

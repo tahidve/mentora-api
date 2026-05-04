@@ -42,8 +42,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingStatusEnum status = BookingStatusEnum.CONFIRMED;
-
+    private BookingStatusEnum status = BookingStatusEnum.PENDING_PAYMENT;
     private Instant createdAt;
 
     @PrePersist

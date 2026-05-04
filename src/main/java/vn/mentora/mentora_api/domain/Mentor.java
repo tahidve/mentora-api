@@ -34,6 +34,10 @@ public class Mentor {
     private int totalStars;
     private int totalReviews;
 
+    // Stripe
+    private String stripeAccountId;
+    private boolean stripeOnboarded = false;
+
     @OneToOne
     @MapsId
     @JoinColumn(name = "mentor_id")
