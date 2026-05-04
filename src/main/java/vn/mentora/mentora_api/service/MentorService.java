@@ -39,10 +39,8 @@ public class MentorService {
     private final SkillRepository skillRepository;
     private final FileService fileService;
     private final EmailService emailService;
+    private final StripeService stripeService;
 
-    // Lấy email admin từ application.properties (để báo Admin khi Mentor resubmit)
-    // @Value không đưa vào constructor — Spring inject trực tiếp vào field sau khi
-    // tạo Bean.
     @Value("${app.admin.email}")
     private String adminEmail;
 
@@ -52,7 +50,8 @@ public class MentorService {
             WorkForRepository workForRepository,
             SkillRepository skillRepository,
             FileService fileService,
-            EmailService emailService) {
+            EmailService emailService,
+            StripeService stripeService) {
         this.mentorRepository = mentorRepository;
         this.companyRepository = companyRepository;
         this.jobTitleRepository = jobTitleRepository;
@@ -60,6 +59,7 @@ public class MentorService {
         this.skillRepository = skillRepository;
         this.fileService = fileService;
         this.emailService = emailService;
+        this.stripeService = stripeService;
     }
 
     @Transactional
@@ -349,6 +349,57 @@ public class MentorService {
 
         result.setResult(cards);
         return result;
+    }
+
+    // Tạo Connected Account trên Stripe cho Mentor.
+    // Chỉ gọi 1 lần duy nhất. Lưu accountId vào DB.
+    @Transactional
+    public String initiateStripeOnboarding() throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy user đang đăng nhập"));
+        Mentor mentor = mentorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Mentor"));
+
+        if (mentor.getStripeAccountId() != null) {
+            throw new IdInvalidException("Bạn đã có tài khoản Stripe rồi. Hãy lấy link onboarding.");
+        }
+
+        String accountId = stripeService.createConnectedAccount(email);
+        mentor.setStripeAccountId(accountId);
+        mentorRepository.save(mentor);
+        return accountId;
+    }
+
+    // lấy link để mentor điền thông tin trên stripe
+    public String getStripeOnboardingLink() throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy user đang đăng nhập"));
+        Mentor mentor = mentorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Mentor"));
+
+        if (mentor.getStripeAccountId() == null) {
+            throw new IdInvalidException("Bạn chưa khởi tạo tài khoản Stripe. Hãy gọi API /onboard trước.");
+        }
+        return stripeService.createOnboardingLink(mentor.getStripeAccountId());
+    }
+
+    // Kiểm tra xem Mentor đã điền đủ thông tin ngân hàng trên Stripe chưa.
+    // Cập nhật giá trị boolean stripeOnboarded vào DB.
+    @Transactional
+    public boolean checkStripeStatus() throws IdInvalidException {
+        String email = SecurityUtil.getCurrentUserLogin()
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy user đang đăng nhập"));
+        Mentor mentor = mentorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Mentor"));
+
+        if (mentor.getStripeAccountId() == null) {
+            throw new IdInvalidException("Bạn chưa khởi tạo tài khoản Stripe.");
+        }
+
+        boolean onboarded = stripeService.checkOnboardingStatus(mentor.getStripeAccountId());
+        mentor.setStripeOnboarded(onboarded);
+        mentorRepository.save(mentor);
+        return onboarded;
     }
 
 }

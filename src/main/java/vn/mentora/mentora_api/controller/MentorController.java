@@ -177,4 +177,26 @@ public class MentorController {
         return ResponseEntity.ok(this.mentorService.resubmitProfile(email));
     }
 
+    // ─────────── STRIPE ONBOARDING ───────────
+    @PostMapping("/mentors/me/stripe/onboard")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Stripe Connected Account initiated")
+    public ResponseEntity<String> initiateOnboard() throws IdInvalidException {
+        return ResponseEntity.ok(mentorService.initiateStripeOnboarding());
+    }
+
+    @GetMapping("/mentors/me/stripe/onboard-link")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Stripe onboarding link generated")
+    public ResponseEntity<String> getOnboardLink() throws IdInvalidException {
+        return ResponseEntity.ok(mentorService.getStripeOnboardingLink());
+    }
+
+    @GetMapping("/mentors/me/stripe/status")
+    @PreAuthorize("hasAuthority('MENTOR')")
+    @ApiMessage("Stripe onboarding status checked")
+    public ResponseEntity<Boolean> getStripeStatus() throws IdInvalidException {
+        return ResponseEntity.ok(mentorService.checkStripeStatus());
+    }
+
 }
