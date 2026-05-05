@@ -6,6 +6,8 @@ import jakarta.annotation.PostConstruct;
 import vn.mentora.mentora_api.util.error.IdInvalidException;
 
 import com.stripe.Stripe;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Account;
 import com.stripe.model.AccountLink;
@@ -91,6 +93,48 @@ public class StripeService {
         } catch (StripeException e) {
             throw new IdInvalidException("Stripe error: " + e.getMessage());
         }
+    }
+
+    public String createCheckoutSession(String planName, long amountInCents, String currency,
+            Long invoiceId, Long slotId, String mentorAccountId)
+            throws IdInvalidException {
+        try {
+            long feeAmount = amountInCents * platformFeePercent / 100;
+
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.PAYMENT) // Dạng thanh toán 1 lần, không phải trả hàng tháng
+                    .setSuccessUrl(this.successUrl) // link fe thanh toán thành công
+                    .setCancelUrl(this.cancelUrl) // ... thất bại
+                    .putMetadata("invoice_id", invoiceId.toString()) // để nhận thông tin trừ stripe từ webhook, update
+                                                                     // db
+                    .putMetadata("slot_id", slotId.toString())
+                    .addLineItem(SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                                    .setCurrency(currency)
+                                    .setUnitAmount(amountInCents)
+                                    .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                            .setName(planName) // tên plan hiện trên màn hình nhập thẻ của stripe
+                                            .build())
+                                    .build())
+                            .build())
+                    .setPaymentIntentData(SessionCreateParams.PaymentIntentData.builder()
+                            .setApplicationFeeAmount(feeAmount)
+                            .setTransferData(SessionCreateParams.PaymentIntentData.TransferData.builder()
+                                    .setDestination(mentorAccountId)
+                                    .build())
+                            .build())
+                    .build();
+
+            Session session = Session.create(params); // gomm toàn bộ và gửi lên api của stripe
+            return session.getUrl(); // lấy link thanh toán
+        } catch (StripeException e) {
+            throw new IdInvalidException("Lỗi tạo Checkout: " + e.getMessage());
+        }
+    }
+
+    public String getWebhookSecret() {
+        return this.webhookSecret;
     }
 
 }

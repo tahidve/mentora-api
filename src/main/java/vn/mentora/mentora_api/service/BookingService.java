@@ -3,14 +3,16 @@ package vn.mentora.mentora_api.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import vn.mentora.mentora_api.domain.Booking;
 import vn.mentora.mentora_api.domain.Discount;
 import vn.mentora.mentora_api.domain.Invoice;
 import vn.mentora.mentora_api.domain.Meeting;
 import vn.mentora.mentora_api.domain.Mentee;
+import vn.mentora.mentora_api.domain.Mentor;
 import vn.mentora.mentora_api.domain.Plan;
 import vn.mentora.mentora_api.domain.PlanMentorship;
 import vn.mentora.mentora_api.domain.PlanRegistration;
@@ -35,6 +37,9 @@ import vn.mentora.mentora_api.util.error.IdInvalidException;
 @Service
 public class BookingService {
 
+    @Value("${stripe.platform-fee-percent}")
+    private int platformFeePercent;
+
     private final BookingRepository bookingRepository;
     private final MenteeRepository menteeRepository;
     private final PlanRepository planRepository;
@@ -44,13 +49,14 @@ public class BookingService {
     private final PlanRegistrationRepository planRegistrationRepository;
     private final InvoiceRepository invoiceRepository;
     private final MeetingRepository meetingRepository;
-    private final EmailService emailService; // Thêm vào
+    private final EmailService emailService;
+    private final StripeService stripeService;
 
     public BookingService(BookingRepository bookingRepository, MenteeRepository menteeRepository,
             PlanRepository planRepository, DiscountRepository discountRepository, SlotRepository slotRepository,
             DiscountService discountService, PlanRegistrationRepository planRegistrationRepository,
             InvoiceRepository invoiceRepository, MeetingRepository meetingRepository,
-            EmailService emailService) {
+            EmailService emailService, StripeService stripeService) {
         this.bookingRepository = bookingRepository;
         this.menteeRepository = menteeRepository;
         this.planRepository = planRepository;
@@ -61,15 +67,21 @@ public class BookingService {
         this.invoiceRepository = invoiceRepository;
         this.meetingRepository = meetingRepository;
         this.emailService = emailService;
+        this.stripeService = stripeService;
     }
 
-    @Transactional
-    public ResBookingDTO createBooking(String email, ReqCreateBookingDTO dto) throws IdInvalidException {
+    @Transactional(rollbackFor = Exception.class)
+    public String createBooking(String email, ReqCreateBookingDTO dto) throws IdInvalidException {
         Mentee mentee = this.menteeRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IdInvalidException("Không tồn tại mentee này"));
 
         Plan plan = this.planRepository.findById(dto.getPlanId())
                 .orElseThrow(() -> new IdInvalidException("Không tồn tại plan này"));
+
+        Mentor mentor = plan.getMentor();
+        if (!mentor.isStripeOnboarded()) {
+            throw new IdInvalidException("Mentor chưa liên kết tài khoản nhận tiền, không thể đặt lịch");
+        }
 
         Discount discount = null;
         if (dto.getDiscountId() != null) {
@@ -109,75 +121,54 @@ public class BookingService {
         registration.setDiscount(discount);
         this.planRegistrationRepository.save(registration);
 
+        // tạo Invoice — ghi nhận phí sàn và tiền mentor nhận
         Invoice invoice = new Invoice();
         invoice.setAmountTotal(amountTotal);
         invoice.setAmountSubtotal(amountSubtotal);
         invoice.setMentee(mentee);
         invoice.setPlanRegistration(registration);
+        invoice.setCurrency("USD");
+        // Tính phí sàn
+        BigDecimal fee = amountTotal
+                .multiply(BigDecimal.valueOf(platformFeePercent))
+                .divide(BigDecimal.valueOf(100));
+        invoice.setPlatformFee(fee);
+        invoice.setNetAmount(amountTotal.subtract(fee));
         this.invoiceRepository.save(invoice);
-
-        Meeting meeting = new Meeting();
-        meeting.setInvoice(invoice);
-        meeting.setSlot(slot);
-        meeting.setDate(slot.getDate());
-        meeting.setStartTime(slot.getStartTime());
-        meeting.setEndTime(slot.getEndTime());
-        meeting.setStatus(MeetingStatusEnum.PENDING); // Chờ mentor xác nhận, đặt link
-        meeting = meetingRepository.save(meeting);
 
         Booking booking = new Booking();
         booking.setMentee(mentee);
         booking.setPlan(plan);
         booking.setPlanRegistration(registration);
+        booking.setStatus(BookingStatusEnum.PENDING_PAYMENT);
         this.bookingRepository.save(booking);
 
-        slot.setStatus(SlotStatusEnum.BOOKED);
+        // slot RESERVED — Webhook mới đổi sang BOOKED sau khi thu
+        // tiền xong
+        slot.setStatus(SlotStatusEnum.RESERVED);
         this.slotRepository.save(slot);
 
-        // Build response DTO (trong transaction scope — có đủ slot, invoice, plan,
-        // booking trong tay)
-        ResBookingDTO res = new ResBookingDTO();
-        res.setBookingId(booking.getBookingId());
-        res.setInvoiceId(invoice.getInvoiceId());
-        res.setMeetingId(meeting.getMeetingId());
-        res.setAmountSubtotal(amountSubtotal);
-        res.setAmountTotal(amountTotal);
-        res.setDiscountApplied(discount != null ? discount.getDiscountName() : null);
-        res.setSlotDate(slot.getDate());
-        res.setStartTime(slot.getStartTime());
-        res.setEndTime(slot.getEndTime());
-        res.setPaymentStatus(invoice.getPaymentStatus().name());
-        res.setBookingStatus(booking.getStatus().name());
+        // Gọi Stripe tạo link Checkout
+        long amountInCents = amountTotal.multiply(BigDecimal.valueOf(100)).longValue();
 
-        // Plan name: PlanSession có sessionName, PlanMentorship có tên riêng
-        if (plan instanceof PlanSession ps) {
-            res.setPlanName(ps.getSessionName());
-        } else if (plan instanceof PlanMentorship pm) {
-            res.setPlanName(pm.getPlanName());
-        }
+        // unproxy để instanceof không bị trả false với Hibernate Proxy
+        Plan realPlan = (Plan) org.hibernate.Hibernate.unproxy(plan);
+        String planName = (realPlan instanceof PlanSession ps)
+                ? ps.getSessionName()
+                : "Mentorship Plan";
 
-        // Mentor name lấy từ User (firstName + lastName)
-        String mentorName = plan.getMentor().getUser().getFirstName() + " " + plan.getMentor().getUser().getLastName();
-        res.setMentorName(mentorName);
+        String checkoutUrl = this.stripeService.createCheckoutSession(
+                planName,
+                amountInCents,
+                "usd",
+                invoice.getInvoiceId(),
+                slot.getSlotId(),
+                mentor.getStripeAccountId());
 
-        // Email cho Mentor: báo có booking mới
-        String mentorEmail = plan.getMentor().getUser().getEmail();
-        this.emailService.sendBookingConfirmToMentor(
-                mentorEmail, mentorName,
-                mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName(),
-                res.getPlanName(), slot.getDate(), slot.getStartTime());
-
-        // Email cho Mentee: xác nhận booking thành công
-        this.emailService.sendBookingConfirmToMentee(
-                mentee.getUser().getEmail(),
-                mentee.getUser().getFirstName() + " " + mentee.getUser().getLastName(),
-                mentorName, res.getPlanName(), slot.getDate(), slot.getStartTime(),
-                amountTotal);
-
-        return res;
+        return checkoutUrl;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ResBookingDTO cancelBooking(String email, Long bookingId) throws IdInvalidException {
         Booking booking = this.bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IdInvalidException("Booking không tồn tại"));

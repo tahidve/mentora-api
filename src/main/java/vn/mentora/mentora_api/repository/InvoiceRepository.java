@@ -27,4 +27,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
 
     // list invoices theo mentee
     List<Invoice> findByMenteeMenteeId(Long menteeId);
+
+    Optional<Invoice> findByStripeCheckoutSessionId(String sessionId);
 }

@@ -18,7 +18,7 @@ import vn.mentora.mentora_api.util.constant.*;
 
 /**
  * DataInitializer — chạy một lần khi startup, seed toàn bộ dữ liệu mẫu.
- * Guard: kiểm tra existsByEmail("admin@mentoria.vn") → nếu đã có → SKIP toàn
+ * Guard: kiểm tra existsByEmail("admin@mentora.vn") → nếu đã có → SKIP toàn
  * bộ.
  * Password tất cả accounts: Abc@12345
  */
@@ -87,7 +87,7 @@ public class DataInitializer implements CommandLineRunner {
         @Transactional
         public void run(String... args) throws Exception {
                 // ── Guard: nếu đã có admin thì bỏ qua toàn bộ ──────────────────────
-                if (userRepository.existsByEmail("admin@mentoria.vn")) {
+                if (userRepository.existsByEmail("admin@mentora.vn")) {
                         System.out.println(">>> [DataInitializer] Dữ liệu đã tồn tại → SKIP.");
                         return;
                 }
@@ -98,7 +98,7 @@ public class DataInitializer implements CommandLineRunner {
                 // ════════════════════════════════════════════════════════════════════
                 // 1. USERS
                 // ════════════════════════════════════════════════════════════════════
-                User admin = makeUser("Admin", "Mentoria", "admin@mentoria.vn", encodedPw, RoleEnum.ADMIN, "Vietnam",
+                User admin = makeUser("Admin", "mentora", "admin@mentora.vn", encodedPw, RoleEnum.ADMIN, "Vietnam",
                                 "Asia/Ho_Chi_Minh", GenderEnum.MALE, UserStatusEnum.ACTIVE);
                 User uDuc = makeUser("Nguyen", "Minh Duc", "duc.nguyen@mentor.vn", encodedPw, RoleEnum.MENTOR,
                                 "Vietnam",
@@ -201,6 +201,8 @@ public class DataInitializer implements CommandLineRunner {
                 mDuc.setTotalReviews(23);
                 mDuc.setLanguages(List.of("Vietnamese", "English"));
                 mDuc.setSkills(List.of(sJava, sSpring, sMicro, sDocker, sPG, sRedis, sKafka, sGit, sAgile));
+                mDuc.setStripeAccountId("acct_1QzTestStripeIdMock");
+                mDuc.setStripeOnboarded(true);
                 mentorRepository.save(mDuc);
 
                 Mentor mHoa = new Mentor();
@@ -547,7 +549,7 @@ public class DataInitializer implements CommandLineRunner {
                 mt3.setInvoice(inv3);
                 mt3.setSlot(slotLinhFuture);
                 mt3.setStatus(MeetingStatusEnum.SCHEDULED);
-                mt3.setLocation("https://zoom.us/j/123456789?pwd=mentoria2026");
+                mt3.setLocation("https://zoom.us/j/123456789?pwd=mentora2026");
                 mt3.setDate(slotLinhFuture.getDate());
                 mt3.setStartTime(slotLinhFuture.getStartTime());
                 mt3.setEndTime(slotLinhFuture.getEndTime());
@@ -586,7 +588,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 System.out.println(">>> [DataInitializer] ✅ Seed hoàn tất!");
                 System.out.println(">>> Accounts (password: Abc@12345):");
-                System.out.println(">>>   ADMIN  : admin@mentoria.vn");
+                System.out.println(">>>   ADMIN  : admin@mentora.vn");
                 System.out.println(
                                 ">>>   MENTOR  : duc.nguyen@mentor.vn | hoa.tran@mentor.vn | thanh.le@mentor.vn | linh.pham@mentor.vn | son.vo@mentor.vn");
                 System.out.println(

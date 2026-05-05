@@ -31,13 +31,12 @@ public class BookingController {
 
     @PostMapping("/bookings")
     @PreAuthorize("hasAuthority('MENTEE')")
-    @ApiMessage("Tạo booking thành công")
-    public ResponseEntity<ResBookingDTO> createBooking(@Valid @RequestBody ReqCreateBookingDTO request)
+    @ApiMessage("Booking created - redirect to payment")
+    public ResponseEntity<String> createBooking(@Valid @RequestBody ReqCreateBookingDTO request)
             throws IdInvalidException {
         String email = SecurityUtil.getCurrentUserLogin().orElseThrow(() -> new IdInvalidException("Invalid login"));
-        ResBookingDTO response = new ResBookingDTO();
-        response = this.bookingService.createBooking(email, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        String checkoutUrl = this.bookingService.createBooking(email, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(checkoutUrl);
     }
 
     @PutMapping("bookings/{id}/cancel")
