@@ -1,0 +1,9 @@
+# Không đưa các file dev/test vào Docker image
+.gradle
+.idea
+*.iml
+build
+!build/libs
+
+# Log files
+*.log

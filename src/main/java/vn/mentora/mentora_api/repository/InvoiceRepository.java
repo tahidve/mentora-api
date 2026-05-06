@@ -8,8 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+import java.time.Instant;
 
 import vn.mentora.mentora_api.domain.Invoice;
 
@@ -29,4 +31,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     List<Invoice> findByMenteeMenteeId(Long menteeId);
 
     Optional<Invoice> findByStripeCheckoutSessionId(String sessionId);
+
+    // Tìm tất cả Invoice PENDING được tạo trước cutoff (dùng cho cleanup job)
+    @Query("SELECT i FROM Invoice i WHERE i.paymentStatus = 'PENDING' AND i.createdAt < :cutoff")
+    List<Invoice> findPendingCreatedBefore(@Param("cutoff") Instant cutoff);
 }

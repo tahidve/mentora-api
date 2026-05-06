@@ -71,9 +71,9 @@ public class StripeService {
             AccountLinkCreateParams params = AccountLinkCreateParams.builder()
                     .setAccount(accountId)
                     // Nếu link hết hạn, FE redirect về đây để Mentor lấy link mới
-                    .setRefreshUrl("http://localhost:5173/mentor/stripe/refresh")
+                    .setRefreshUrl("https://mentora.tahidve.live/mentor/stripe/refresh")
                     // Sau khi Mentor điền xong, Stripe redirect về đây
-                    .setReturnUrl("http://localhost:5173/mentor/stripe/return")
+                    .setReturnUrl("https://mentora.tahidve.live/mentor/stripe/return")
                     .setType(AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING)
                     .build();
             AccountLink link = AccountLink.create(params);

@@ -101,7 +101,8 @@ public class SecurityConfiguration {
                 "/api/v1/discounts",
                 "/api/v1/feedbacks/mentor/{mentorId}",
                 "/api/v1/webhooks/stripe",
-                "/uploads/**"
+                "/uploads/**",
+                "/actuator/health"  // Docker healthcheck — không cần token
         };
 
         http

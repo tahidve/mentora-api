@@ -1,9 +1,9 @@
 package vn.mentora.mentora_api.config;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,10 +17,13 @@ import vn.mentora.mentora_api.repository.*;
 import vn.mentora.mentora_api.util.constant.*;
 
 /**
- * DataInitializer — chạy một lần khi startup, seed toàn bộ dữ liệu mẫu.
- * Guard: kiểm tra existsByEmail("admin@mentora.vn") → nếu đã có → SKIP toàn
- * bộ.
+ * DataInitializer — chạy một lần khi startup, seed dữ liệu nền.
+ * Guard: existsByEmail("admin@mentora.com") → đã có → SKIP.
  * Password tất cả accounts: Abc@12345
+ *
+ * Chỉ seed dữ liệu nền (accounts, skills, plans, slots).
+ * Core business (booking, invoice, meeting, feedback) = TRỐNG → thao tác qua
+ * UI.
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -34,14 +37,8 @@ public class DataInitializer implements CommandLineRunner {
         private final JobTitleRepository jobTitleRepository;
         private final WorkForRepository workForRepository;
         private final PlanSessionRepository planSessionRepository;
-        private final PlanMentorshipRepository planMentorshipRepository;
         private final SlotRepository slotRepository;
         private final DiscountRepository discountRepository;
-        private final PlanRegistrationRepository planRegistrationRepository;
-        private final BookingRepository bookingRepository;
-        private final InvoiceRepository invoiceRepository;
-        private final MeetingRepository meetingRepository;
-        private final FeedbackRepository feedbackRepository;
         private final PasswordEncoder passwordEncoder;
 
         public DataInitializer(
@@ -54,14 +51,8 @@ public class DataInitializer implements CommandLineRunner {
                         JobTitleRepository jobTitleRepository,
                         WorkForRepository workForRepository,
                         PlanSessionRepository planSessionRepository,
-                        PlanMentorshipRepository planMentorshipRepository,
                         SlotRepository slotRepository,
                         DiscountRepository discountRepository,
-                        PlanRegistrationRepository planRegistrationRepository,
-                        BookingRepository bookingRepository,
-                        InvoiceRepository invoiceRepository,
-                        MeetingRepository meetingRepository,
-                        FeedbackRepository feedbackRepository,
                         PasswordEncoder passwordEncoder) {
                 this.userRepository = userRepository;
                 this.mentorRepository = mentorRepository;
@@ -72,563 +63,529 @@ public class DataInitializer implements CommandLineRunner {
                 this.jobTitleRepository = jobTitleRepository;
                 this.workForRepository = workForRepository;
                 this.planSessionRepository = planSessionRepository;
-                this.planMentorshipRepository = planMentorshipRepository;
                 this.slotRepository = slotRepository;
                 this.discountRepository = discountRepository;
-                this.planRegistrationRepository = planRegistrationRepository;
-                this.bookingRepository = bookingRepository;
-                this.invoiceRepository = invoiceRepository;
-                this.meetingRepository = meetingRepository;
-                this.feedbackRepository = feedbackRepository;
                 this.passwordEncoder = passwordEncoder;
         }
 
         @Override
         @Transactional
         public void run(String... args) throws Exception {
-                // ── Guard: nếu đã có admin thì bỏ qua toàn bộ ──────────────────────
-                if (userRepository.existsByEmail("admin@mentora.vn")) {
-                        System.out.println(">>> [DataInitializer] Dữ liệu đã tồn tại → SKIP.");
+                try {
+                if (userRepository.existsByEmail("admin@mentora.com")) {
+                        System.out.println(">>> [DataInitializer] Data exists → SKIP.");
                         return;
                 }
 
-                System.out.println(">>> [DataInitializer] Bắt đầu khởi tạo dữ liệu mẫu...");
-                String encodedPw = passwordEncoder.encode("Abc@12345");
+                System.out.println(">>> [DataInitializer] Seeding initial data...");
+                String pw = passwordEncoder.encode("Abc@12345");
 
-                // ════════════════════════════════════════════════════════════════════
-                // 1. USERS
-                // ════════════════════════════════════════════════════════════════════
-                User admin = makeUser("Admin", "mentora", "admin@mentora.vn", encodedPw, RoleEnum.ADMIN, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uDuc = makeUser("Nguyen", "Minh Duc", "duc.nguyen@mentor.vn", encodedPw, RoleEnum.MENTOR,
-                                "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uHoa = makeUser("Tran", "Minh Hoa", "hoa.tran@mentor.vn", encodedPw, RoleEnum.MENTOR, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.FEMALE, UserStatusEnum.ACTIVE);
-                User uThanh = makeUser("Le", "Van Thanh", "thanh.le@mentor.vn", encodedPw, RoleEnum.MENTOR, "Singapore",
-                                "Asia/Singapore", GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uLinh = makeUser("Pham", "Ngoc Linh", "linh.pham@mentor.vn", encodedPw, RoleEnum.MENTOR,
-                                "United States",
-                                "America/New_York", GenderEnum.FEMALE, UserStatusEnum.ACTIVE);
-                User uSon = makeUser("Vo", "Thanh Son", "son.vo@mentor.vn", encodedPw, RoleEnum.MENTOR, "Japan",
-                                "Asia/Tokyo",
-                                GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uLan = makeUser("Bui", "Thi Lan", "lan.bui@mentee.vn", encodedPw, RoleEnum.MENTEE, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.FEMALE, UserStatusEnum.ACTIVE);
-                User uNam = makeUser("Hoang", "Van Nam", "nam.hoang@mentee.vn", encodedPw, RoleEnum.MENTEE, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uHien = makeUser("Nguyen", "Thu Hien", "hien.nguyen@mentee.vn", encodedPw, RoleEnum.MENTEE,
-                                "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.FEMALE, UserStatusEnum.ACTIVE);
-                User uHung = makeUser("Do", "Manh Hung", "hung.do@mentee.vn", encodedPw, RoleEnum.MENTEE, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.MALE, UserStatusEnum.ACTIVE);
-                User uMai = makeUser("Dang", "Thi Mai", "mai.dang@mentee.vn", encodedPw, RoleEnum.MENTEE, "Vietnam",
-                                "Asia/Ho_Chi_Minh", GenderEnum.FEMALE, UserStatusEnum.ACTIVE);
-                userRepository.saveAll(List.of(admin, uDuc, uHoa, uThanh, uLinh, uSon, uLan, uNam, uHien, uHung, uMai));
+                // ════════════════════════════════════════════════════════════════
+                // 1. CATEGORIES
+                // ════════════════════════════════════════════════════════════════
+                Category cTech = cat("Technology", null);
+                Category cBiz = cat("Business", null);
+                Category cDesign = cat("Design", null);
+                Category cData = cat("Data & AI", null);
+                Category cCloud = cat("DevOps & Cloud", null);
+                categoryRepository.saveAll(List.of(cTech, cBiz, cDesign, cData, cCloud));
 
-                // ════════════════════════════════════════════════════════════════════
+                Category cFE = cat("Frontend Development", cTech);
+                Category cBE = cat("Backend Development", cTech);
+                Category cMobile = cat("Mobile Development", cTech);
+                Category cMarketing = cat("Marketing", cBiz);
+                Category cStartup = cat("Startup", cBiz);
+                Category cUIUX = cat("UI/UX Design", cDesign);
+                Category cML = cat("Machine Learning", cData);
+                Category cInfra = cat("Cloud Infrastructure", cCloud);
+                categoryRepository.saveAll(List.of(cFE, cBE, cMobile, cMarketing, cStartup, cUIUX, cML, cInfra));
+
+                // ════════════════════════════════════════════════════════════════
                 // 2. SKILLS
-                // ════════════════════════════════════════════════════════════════════
+                // ════════════════════════════════════════════════════════════════
                 Skill sJava = skill("Java");
                 Skill sSpring = skill("Spring Boot");
-                Skill sMicro = skill("Microservices");
-                Skill sPython = skill("Python");
-                Skill sML = skill("Machine Learning");
-                Skill sDL = skill("Deep Learning");
                 Skill sReact = skill("React");
-                Skill sNode = skill("Node.js");
                 Skill sTS = skill("TypeScript");
-                Skill sAWS = skill("AWS");
+                Skill sNode = skill("Node.js");
+                Skill sPython = skill("Python");
                 Skill sDocker = skill("Docker");
                 Skill sK8s = skill("Kubernetes");
-                Skill sSD = skill("System Design");
-                Skill sGolang = skill("Golang");
-                Skill sPG = skill("PostgreSQL");
-                Skill sMongo = skill("MongoDB");
-                Skill sRedis = skill("Redis");
-                Skill sKafka = skill("Kafka");
-                Skill sCICD = skill("CI/CD");
-                Skill sDSA = skill("Data Structures & Algorithms");
-                Skill sNext = skill("Next.js");
-                Skill sTF = skill("TensorFlow");
-                Skill sPT = skill("PyTorch");
-                Skill sSQL = skill("SQL");
+                Skill sMySQL = skill("MySQL");
+                Skill sPostgres = skill("PostgreSQL");
+                Skill sAWS = skill("AWS");
                 Skill sGit = skill("Git");
-                Skill sAgile = skill("Agile/Scrum");
-                Skill sLead = skill("Leadership");
-                Skill sCoach = skill("Career Coaching");
-                Skill sEnglish = skill("English for IT");
-                Skill sCloud = skill("Cloud Native");
+                Skill sREST = skill("REST API");
+                Skill sGraphQL = skill("GraphQL");
+                Skill sFlutter = skill("Flutter");
+                Skill sSwift = skill("Swift");
+                Skill sFigma = skill("Figma");
+                Skill sPM = skill("Product Management");
+                Skill sDataAn = skill("Data Analysis");
+                Skill sMLSkill = skill("Machine Learning");
                 skillRepository.saveAll(List.of(
-                                sJava, sSpring, sMicro, sPython, sML, sDL, sReact, sNode, sTS, sAWS,
-                                sDocker, sK8s, sSD, sGolang, sPG, sMongo, sRedis, sKafka, sCICD, sDSA,
-                                sNext, sTF, sPT, sSQL, sGit, sAgile, sLead, sCoach, sEnglish, sCloud));
+                                sJava, sSpring, sReact, sTS, sNode, sPython, sDocker, sK8s,
+                                sMySQL, sPostgres, sAWS, sGit, sREST, sGraphQL, sFlutter,
+                                sSwift, sFigma, sPM, sDataAn, sMLSkill));
 
-                // ════════════════════════════════════════════════════════════════════
-                // 3. CATEGORIES (parent → child)
-                // ════════════════════════════════════════════════════════════════════
-                Category cSE = cat("Software Engineering", null, List.of(sJava, sSpring, sMicro, sGolang, sPG));
-                Category cData = cat("Data & AI", null, List.of(sPython, sML, sDL, sTF, sPT, sSQL));
-                Category cCloud = cat("Cloud & DevOps", null, List.of(sAWS, sDocker, sK8s, sCICD, sCloud));
-                Category cCareer = cat("Career Development", null, List.of(sSD, sDSA, sCoach, sEnglish));
-                Category cMobile = cat("Mobile Development", null, List.of(sReact, sTS));
-                categoryRepository.saveAll(List.of(cSE, cData, cCloud, cCareer, cMobile));
+                // Category ↔ Skill
+                cFE.setSkills(new ArrayList<>(List.of(sReact, sTS)));
+                cBE.setSkills(new ArrayList<>(List.of(sJava, sSpring, sNode, sMySQL, sPostgres, sREST, sGraphQL)));
+                cMobile.setSkills(new ArrayList<>(List.of(sFlutter, sSwift)));
+                cMarketing.setSkills(new ArrayList<>(List.of(sPM)));
+                cStartup.setSkills(new ArrayList<>(List.of(sPM)));
+                cUIUX.setSkills(new ArrayList<>(List.of(sFigma)));
+                cML.setSkills(new ArrayList<>(List.of(sPython, sMLSkill)));
+                cInfra.setSkills(new ArrayList<>(List.of(sDocker, sK8s, sAWS)));
+                categoryRepository.saveAll(new ArrayList<>(List.of(cFE, cBE, cMobile, cMarketing, cStartup, cUIUX, cML, cInfra)));
 
-                categoryRepository.saveAll(List.of(
-                                cat("Backend Development", cSE, List.of(sJava, sSpring, sMicro, sPG, sRedis, sKafka)),
-                                cat("Frontend Development", cSE, List.of(sReact, sTS, sNext)),
-                                cat("Full-Stack", cSE, List.of(sReact, sNode, sTS, sAWS)),
-                                cat("Machine Learning", cData, List.of(sML, sDL, sTF, sPT, sPython)),
-                                cat("Data Engineering", cData, List.of(sPython, sPG, sMongo, sSQL)),
-                                cat("AI/LLM", cData, List.of(sPython, sTF, sPT)),
-                                cat("Kubernetes & Docker", cCloud, List.of(sDocker, sK8s)),
-                                cat("CI/CD & Automation", cCloud, List.of(sCICD, sDocker)),
-                                cat("Interview Prep", cCareer, List.of(sSD, sDSA, sCoach)),
-                                cat("Resume & Portfolio", cCareer, List.of(sCoach, sEnglish)),
-                                cat("Working Abroad", cCareer, List.of(sEnglish, sLead))));
-
-                // ════════════════════════════════════════════════════════════════════
-                // 4. MENTORS
-                // ════════════════════════════════════════════════════════════════════
-                Mentor mDuc = new Mentor();
-                mDuc.setUser(uDuc);
-                mDuc.setBio(
-                                "Senior Software Engineer với 8+ năm kinh nghiệm Java/Spring Boot và Microservices. Từng làm tại VNG, Tiki. Đam mê lên level cho fresher/junior developer.");
-                mDuc.setHeadline("Senior Java Engineer @ Tiki | Spring Boot | Microservices | 8+ YOE");
-                mDuc.setResponseTime(ResponseTimeEnum.WITHIN_1_HOUR);
-                mDuc.setTotalMeetings(24);
-                mDuc.setTotalStars(108);
-                mDuc.setTotalReviews(23);
-                mDuc.setLanguages(List.of("Vietnamese", "English"));
-                mDuc.setSkills(List.of(sJava, sSpring, sMicro, sDocker, sPG, sRedis, sKafka, sGit, sAgile));
-                mDuc.setStripeAccountId("acct_1QzTestStripeIdMock");
-                mDuc.setStripeOnboarded(true);
-                mentorRepository.save(mDuc);
-
-                Mentor mHoa = new Mentor();
-                mHoa.setUser(uHoa);
-                mHoa.setBio(
-                                "Data Scientist và AI Engineer từ Bách Khoa. Chuyên ML/DL production. Hiện work tại AI startup series B.");
-                mHoa.setHeadline("Data Scientist | ML Engineer | TensorFlow & PyTorch | Ex-VinAI");
-                mHoa.setResponseTime(ResponseTimeEnum.WITHIN_2_HOURS);
-                mHoa.setTotalMeetings(18);
-                mHoa.setTotalStars(68);
-                mHoa.setTotalReviews(18);
-                mHoa.setLanguages(List.of("Vietnamese", "English"));
-                mHoa.setSkills(List.of(sPython, sML, sDL, sTF, sPT, sPG, sMongo, sSQL));
-                mentorRepository.save(mHoa);
-
-                Mentor mThanh = new Mentor();
-                mThanh.setUser(uThanh);
-                mThanh.setBio(
-                                "Full-Stack Developer và Tech Lead 6 năm tại Singapore. Đã mentor 50+ junior developer. Chuyên React, Node.js, AWS.");
-                mThanh.setHeadline("Tech Lead @ Singapore Startup | React | Node.js | AWS | Career Coach");
-                mThanh.setResponseTime(ResponseTimeEnum.WITHIN_1_DAY);
-                mThanh.setTotalMeetings(31);
-                mThanh.setTotalStars(139);
-                mThanh.setTotalReviews(29);
-                mThanh.setLanguages(List.of("Vietnamese", "English"));
-                mThanh.setSkills(List.of(sReact, sNode, sTS, sAWS, sDocker, sNext, sGit, sLead));
-                mentorRepository.save(mThanh);
-
-                Mentor mLinh = new Mentor();
-                mLinh.setUser(uLinh);
-                mLinh.setBio(
-                                "Software Engineer tại Big Tech (Seattle). Chuyên System Design, Distributed Systems, FAANG interview. Đã coach 30+ candidates pass Google/Meta/Amazon.");
-                mLinh.setHeadline("Software Engineer @ Big Tech | System Design | FAANG Interview Coach");
-                mLinh.setResponseTime(ResponseTimeEnum.WITHIN_1_HOUR);
-                mLinh.setTotalMeetings(45);
-                mLinh.setTotalStars(206);
-                mLinh.setTotalReviews(43);
-                mLinh.setLanguages(List.of("Vietnamese", "English"));
-                mLinh.setSkills(List.of(sSD, sDSA, sJava, sCoach, sEnglish, sAWS, sK8s));
-                mentorRepository.save(mLinh);
-
-                Mentor mSon = new Mentor();
-                mSon.setUser(uSon);
-                mSon.setBio(
-                                "Backend Developer và Cloud Architect 5 năm tại Nhật Bản. Chuyên Golang, Kubernetes, Cloud Native. Giúp bạn hiểu IT culture Nhật và chuẩn bị làm việc ở nước ngoài.");
-                mSon.setHeadline("Cloud Architect @ Japan | Golang | K8s | Working Abroad Advisor");
-                mSon.setResponseTime(ResponseTimeEnum.WITHIN_2_HOURS);
-                mSon.setTotalMeetings(12);
-                mSon.setTotalStars(46);
-                mSon.setTotalReviews(10);
-                mSon.setLanguages(List.of("Vietnamese", "English", "Japanese"));
-                mSon.setSkills(List.of(sGolang, sDocker, sK8s, sAWS, sCloud, sCICD, sEnglish));
-                mentorRepository.save(mSon);
-
-                // ════════════════════════════════════════════════════════════════════
-                // 5. MENTEES
-                // ════════════════════════════════════════════════════════════════════
-                Mentee menLan = mentee(uLan, "Chuyển từ fresher sang junior Java developer trong 6 tháng.");
-                Mentee menNam = mentee(uNam, "Nâng cao System Design để phỏng vấn công ty lớn.");
-                Mentee menHien = mentee(uHien, "Học Machine Learning để chuyển ngành từ backend sang Data Science.");
-                Mentee menHung = mentee(uHung, "Chuẩn bị portfolio và kỹ năng phỏng vấn để xin việc tại Singapore.");
-                Mentee menMai = mentee(uMai, "Nắm vững React + Next.js để build full-stack web app.");
-                menteeRepository.saveAll(List.of(menLan, menNam, menHien, menHung, menMai));
-
-                // ════════════════════════════════════════════════════════════════════
-                // 6. COMPANIES & JOB TITLES
-                // ════════════════════════════════════════════════════════════════════
-                Company cTiki = company("Tiki");
-                Company cVNG = company("VNG Corporation");
-                Company cVinAI = company("VinAI Research");
-                Company cGrab = company("Grab");
-                Company cSea = company("Sea Group");
-                Company cFPT = company("FPT Software");
-                Company cShopee = company("Shopee");
-                Company cGoogle = company("Google");
-                Company cBosch = company("Bosch Vietnam");
-                Company cNTT = company("NTT Data Japan");
+                // ════════════════════════════════════════════════════════════════
+                // 3. COMPANIES & JOB TITLES
+                // ════════════════════════════════════════════════════════════════
+                Company coGoogle = company("Google");
+                Company coAWS = company("Amazon Web Services");
+                Company coMeta = company("Meta");
+                Company coStripe = company("Stripe");
+                Company coSpotify = company("Spotify");
+                Company coShopify = company("Shopify");
+                Company coGitHub = company("GitHub");
+                Company coDatadog = company("Datadog");
+                Company coGrab = company("Grab");
                 companyRepository.saveAll(
-                                List.of(cTiki, cVNG, cVinAI, cGrab, cSea, cFPT, cShopee, cGoogle, cBosch, cNTT));
+                                List.of(coGoogle, coAWS, coMeta, coStripe, coSpotify, coShopify, coGitHub, coDatadog, coGrab));
 
                 JobTitle jtSE = jobTitle("Software Engineer");
                 JobTitle jtSSE = jobTitle("Senior Software Engineer");
-                JobTitle jtDS = jobTitle("Data Scientist");
-                JobTitle jtMLE = jobTitle("Machine Learning Engineer");
-                JobTitle jtFSD = jobTitle("Full-Stack Developer");
                 JobTitle jtTL = jobTitle("Tech Lead");
-                JobTitle jtBE = jobTitle("Backend Developer");
-                JobTitle jtCA = jobTitle("Cloud Architect");
-                jobTitleRepository.saveAll(List.of(jtSE, jtSSE, jtDS, jtMLE, jtFSD, jtTL, jtBE, jtCA));
+                JobTitle jtEM = jobTitle("Engineering Manager");
+                JobTitle jtDevOps = jobTitle("DevOps Engineer");
+                JobTitle jtPM = jobTitle("Product Manager");
+                JobTitle jtUX = jobTitle("UX Designer");
+                JobTitle jtDS = jobTitle("Data Scientist");
+                jobTitleRepository.saveAll(List.of(jtSE, jtSSE, jtTL, jtEM, jtDevOps, jtPM, jtUX, jtDS));
 
-                // ════════════════════════════════════════════════════════════════════
-                // 7. WORK EXPERIENCE (work_for — composite key)
-                // ════════════════════════════════════════════════════════════════════
+                // ════════════════════════════════════════════════════════════════
+                // 4. USERS
+                // ════════════════════════════════════════════════════════════════
+                // Admin
+                User uAdmin = user("Admin", "Mentora", "admin@mentora.com", pw,
+                                "United States", "America/New_York", GenderEnum.MALE, RoleEnum.ADMIN);
+                userRepository.save(uAdmin);
+
+                // Mentors
+                User uAlex = user("Alex", "Chen", "alex.chen@mentora.com", pw,
+                                "United States", "America/Los_Angeles", GenderEnum.MALE, RoleEnum.MENTOR);
+                User uSophia = user("Sophia", "Mueller", "sophia.mueller@mentora.com", pw,
+                                "Germany", "Europe/Berlin", GenderEnum.FEMALE, RoleEnum.MENTOR);
+                User uRaj = user("Raj", "Patel", "raj.patel@mentora.com", pw,
+                                "India", "Asia/Kolkata", GenderEnum.MALE, RoleEnum.MENTOR);
+                User uEmma = user("Emma", "Larsson", "emma.larsson@mentora.com", pw,
+                                "Sweden", "Europe/Stockholm", GenderEnum.FEMALE, RoleEnum.MENTOR);
+                userRepository.saveAll(List.of(uAlex, uSophia, uRaj, uEmma));
+
+                // Mentees
+                User uJames = user("James", "Wilson", "james.wilson@mentora.com", pw,
+                                "United Kingdom", "Europe/London", GenderEnum.MALE, RoleEnum.MENTEE);
+                User uYuki = user("Yuki", "Tanaka", "yuki.tanaka@mentora.com", pw,
+                                "Japan", "Asia/Tokyo", GenderEnum.FEMALE, RoleEnum.MENTEE);
+                User uLucas = user("Lucas", "Silva", "lucas.silva@mentora.com", pw,
+                                "Brazil", "America/Sao_Paulo", GenderEnum.MALE, RoleEnum.MENTEE);
+                userRepository.saveAll(List.of(uJames, uYuki, uLucas));
+
+                // ════════════════════════════════════════════════════════════════
+                // 5. MENTORS
+                // ════════════════════════════════════════════════════════════════
+                Mentor mAlex = mentor(uAlex,
+                                "Staff Engineer at Google with 10+ years building distributed systems. " +
+                                                "Passionate about clean architecture, microservices, and mentoring the next generation of engineers.",
+                                "Java/Spring Boot Expert | Staff Engineer @ Google",
+                                ResponseTimeEnum.WITHIN_1_DAY,
+                                List.of(sJava, sSpring, sMySQL, sREST, sDocker, sGit),
+                                List.of("English", "Mandarin"));
+
+                Mentor mSophia = mentor(uSophia,
+                                "Senior Frontend Engineer specializing in React ecosystem. " +
+                                                "Built design systems used by millions. Open-source contributor and conference speaker.",
+                                "React & TypeScript Specialist | Senior FE @ Spotify",
+                                ResponseTimeEnum.WITHIN_12_HOURS,
+                                List.of(sReact, sTS, sNode, sGraphQL, sGit, sFigma),
+                                List.of("English", "German", "French"));
+
+                Mentor mRaj = mentor(uRaj,
+                                "Principal DevOps Engineer with deep expertise in cloud-native architecture. " +
+                                                "AWS certified Solutions Architect. Helped startups scale from 0 to millions of users.",
+                                "Cloud Architect & DevOps Lead | Principal Engineer @ AWS",
+                                ResponseTimeEnum.WITHIN_1_DAY,
+                                List.of(sDocker, sK8s, sAWS, sPython, sGit),
+                                List.of("English", "Hindi"));
+
+                Mentor mEmma = mentor(uEmma,
+                                "Lead Data Scientist experienced in NLP, recommendation systems, and MLOps. " +
+                                                "Published researcher with a passion for making AI accessible.",
+                                "Data Scientist & ML Engineer | Lead DS @ Shopify",
+                                ResponseTimeEnum.MORE_THAN_2_DAYS,
+                                List.of(sPython, sMLSkill, sDataAn, sPostgres),
+                                List.of("English", "Swedish"));
+
+                mentorRepository.saveAll(List.of(mAlex, mSophia, mRaj, mEmma));
+
+                // ════════════════════════════════════════════════════════════════
+                // 6. MENTEES
+                // ════════════════════════════════════════════════════════════════
+                Mentee meJames = mentee(uJames,
+                                "Learning Java and Spring Boot to land my first backend developer role");
+                Mentee meYuki = mentee(uYuki, "Transitioning from QA to frontend development with React");
+                Mentee meLucas = mentee(uLucas, "Building cloud computing and DevOps skills for career growth");
+                menteeRepository.saveAll(List.of(meJames, meYuki, meLucas));
+
+                // ════════════════════════════════════════════════════════════════
+                // 7. WORK EXPERIENCE
+                // ════════════════════════════════════════════════════════════════
                 workForRepository.saveAll(List.of(
-                                workFor(mDuc, cVNG, jtSE, "2016-06-01", "2019-08-31", false),
-                                workFor(mDuc, cTiki, jtSSE, "2019-09-01", null, true),
-                                workFor(mHoa, cVinAI, jtMLE, "2019-01-01", "2021-12-31", false),
-                                workFor(mHoa, cGrab, jtDS, "2022-01-01", null, true),
-                                workFor(mThanh, cFPT, jtFSD, "2018-03-01", "2020-06-30", false),
-                                workFor(mThanh, cShopee, jtTL, "2020-07-01", null, true),
-                                workFor(mLinh, cBosch, jtSE, "2015-08-01", "2018-05-31", false),
-                                workFor(mLinh, cGoogle, jtSSE, "2018-06-01", null, true),
-                                workFor(mSon, cFPT, jtBE, "2017-04-01", "2019-12-31", false),
-                                workFor(mSon, cNTT, jtCA, "2020-01-01", null, true)));
+                                // Alex: Stripe SE → Google Tech Lead (current)
+                                workFor(mAlex, coStripe, jtSE, "2015-03-01", "2019-12-31"),
+                                workForCurrent(mAlex, coGoogle, jtTL, "2023-07-01"),
+                                // Sophia: GitHub SE → Spotify Senior SE (current)
+                                workFor(mSophia, coGitHub, jtSE, "2017-09-01", "2021-05-31"),
+                                workForCurrent(mSophia, coSpotify, jtSSE, "2021-06-01"),
+                                // Raj: Datadog DevOps → AWS DevOps (current)
+                                workFor(mRaj, coDatadog, jtDevOps, "2016-01-01", "2020-08-31"),
+                                workForCurrent(mRaj, coAWS, jtDevOps, "2020-09-01"),
+                                // Emma: Meta DS → Shopify Lead DS (current)
+                                workFor(mEmma, coMeta, jtDS, "2018-06-01", "2022-12-31"),
+                                workForCurrent(mEmma, coShopify, jtDS, "2023-01-01")));
 
-                // ════════════════════════════════════════════════════════════════════
-                // 8. PLANS — Session Plans
-                // ════════════════════════════════════════════════════════════════════
-                PlanSession ps1 = planSession(mDuc, "Java Core Foundations", 60, 150_000,
-                                "Buổi 1-on-1 sâu về Java Core, OOP, Collections, Exception Handling. Phù hợp fresher.");
-                PlanSession ps2 = planSession(mDuc, "Spring Boot Deep Dive", 90, 250_000,
-                                "Deep dive vào Spring Boot: REST API, Security, JPA/Hibernate. Code review thực tế.");
-                PlanSession ps3 = planSession(mHoa, "Python for Data Science", 60, 180_000,
-                                "Python cho Data Science: Pandas, NumPy, Matplotlib. Bắt đầu từ basics.");
-                PlanSession ps4 = planSession(mHoa, "ML Project Review", 90, 300_000,
-                                "Review ML project của bạn: code review, model evaluation, deployment tips.");
-                PlanSession ps5 = planSession(mThanh, "React & TypeScript Essentials", 60, 200_000,
-                                "React + TypeScript: Hooks, State Management, Component patterns thực chiến.");
-                PlanSession ps6 = planSession(mThanh, "AWS Architecture Consultation", 60, 280_000,
-                                "AWS: EC2, S3, RDS, Lambda. Thiết kế hệ thống scalable trên cloud.");
-                PlanSession ps7 = planSession(mLinh, "Mock Interview Session", 90, 350_000,
-                                "1 Leetcode medium + System Design 30 phút. Feedback chi tiết sau phỏng vấn.");
-                PlanSession ps8 = planSession(mLinh, "System Design Workshop", 90, 400_000,
-                                "Deep dive System Design: thiết kế Twitter, Uber, YouTube. Scalability patterns.");
-                PlanSession ps9 = planSession(mSon, "Golang Bootcamp Session", 60, 220_000,
-                                "Golang từ A-Z: Goroutines, Channels, HTTP server cho backend developer.");
-                PlanSession ps10 = planSession(mSon, "Kubernetes in Practice", 90, 290_000,
-                                "Kubernetes thực chiến: Deploy app lên K8s cluster, Helm, Ingress, HPA.");
-                planSessionRepository.saveAll(List.of(ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10));
+                // ════════════════════════════════════════════════════════════════
+                // 8. PLANS (Session only — USD pricing)
+                // ════════════════════════════════════════════════════════════════
+                planSessionRepository.saveAll(List.of(
+                                // Alex
+                                session(mAlex, "Java Quick Review",
+                                                "30-min code review: architecture patterns, debugging, and best practices.",
+                                                25, 30),
+                                session(mAlex, "Spring Boot Deep Dive",
+                                                "60-min deep mentoring on Spring Boot security, JPA, and microservices.",
+                                                45, 60),
+                                // Sophia
+                                session(mSophia, "React Code Review",
+                                                "30-min session to optimize your React components and state management.",
+                                                20, 30),
+                                session(mSophia, "Frontend Career Coaching",
+                                                "60-min career guidance: portfolio review, interview prep, salary negotiation.",
+                                                40, 60),
+                                // Raj
+                                session(mRaj, "Docker & K8s Troubleshoot",
+                                                "30-min hands-on troubleshooting for container and orchestration issues.",
+                                                30, 30),
+                                session(mRaj, "AWS Architecture Review",
+                                                "60-min cloud architecture review with cost optimization recommendations.",
+                                                55, 60),
+                                // Emma
+                                session(mEmma, "ML Model Review",
+                                                "30-min review of your ML approach: model selection, evaluation, and tuning.",
+                                                35, 30),
+                                session(mEmma, "Data Pipeline Design",
+                                                "60-min session on data engineering, ETL pipelines, and Python best practices.",
+                                                60, 60)));
 
-                // ════════════════════════════════════════════════════════════════════
-                // 9. PLANS — Mentorship Plans + Benefits
-                // ════════════════════════════════════════════════════════════════════
-                PlanMentorship pm1 = planMentorship(mDuc, "Java Backend Mastery", 4, 60, 800_000,
-                                "Mentorship 3 tháng: Java Backend từ zero → junior ready. Daily check-in qua Slack.",
-                                List.of("Weekly 1-on-1 code review session (60 phút)",
-                                                "Unlimited Q&A qua Slack trong giờ hành chính",
-                                                "Lộ trình học cá nhân hóa theo level hiện tại",
-                                                "Mock interview cuối tháng với feedback chi tiết",
-                                                "Resource list: sách, khóa học, blog chọn lọc"));
-
-                PlanMentorship pm2 = planMentorship(mHoa, "ML Engineer Roadmap", 4, 60, 1_000_000,
-                                "Mentorship 3 tháng: ML Engineer từ Python basics → production ML models.",
-                                List.of("4 buổi 1-on-1 mỗi tháng (60 phút/buổi)",
-                                                "Review notebook và code ML projects của bạn",
-                                                "Hướng dẫn deploy model lên production (FastAPI + Docker)",
-                                                "Portfolio review: Kaggle profile, GitHub, LinkedIn"));
-
-                PlanMentorship pm3 = planMentorship(mThanh, "Full-Stack Builder", 6, 60, 900_000,
-                                "Mentorship 3 tháng: React + Node.js + AWS. Build 2 real projects vào portfolio.",
-                                List.of("6 buổi call mỗi tháng, linh hoạt đặt lịch",
-                                                "Guide xây dựng 2 dự án thực tế vào portfolio",
-                                                "Code review toàn bộ PR của bạn",
-                                                "Career advice: resume, job search strategy",
-                                                "Access Discord community của mentor network"));
-
-                PlanMentorship pm4 = planMentorship(mLinh, "FAANG Ready Program", 8, 60, 1_500_000,
-                                "Mentorship 4 tháng: weekly mock interview + lộ trình Leetcode cá nhân hóa.",
-                                List.of("8 buổi mock interview mỗi tháng (technical + behavioral)",
-                                                "Lộ trình Leetcode cá nhân hóa theo timeline công ty target",
-                                                "System Design flashcards và cheat sheets độc quyền",
-                                                "Resume review và LinkedIn optimization",
-                                                "Referral support nếu mentor có connection tại target company"));
-
-                planMentorshipRepository.saveAll(List.of(pm1, pm2, pm3, pm4));
-
-                // ════════════════════════════════════════════════════════════════════
-                // 10. DISCOUNTS
-                // ════════════════════════════════════════════════════════════════════
-                Discount dWelcome = discount("WELCOME10", DiscountTypeEnum.PERCENTAGE, 10, "2025-01-01", "2026-12-31",
-                                true,
-                                100, 23);
-                Discount dSummer = discount("SUMMER25", DiscountTypeEnum.PERCENTAGE, 25, "2026-06-01", "2026-08-31",
-                                true, 50,
-                                8);
-                Discount dFlat = discount("FLAT50K", DiscountTypeEnum.FIXED_AMOUNT, 50000, "2026-01-01", "2026-12-31",
-                                true,
-                                200, 41);
-                Discount dNew = discount("NEWMEMBER15", DiscountTypeEnum.PERCENTAGE, 15, "2026-01-01", "2026-06-30",
-                                true, 30,
-                                15);
-                Discount dBf = discount("BLACKFRIDAY30", DiscountTypeEnum.PERCENTAGE, 30, "2026-11-25", "2026-11-30",
-                                false,
-                                100, 0);
-                discountRepository.saveAll(List.of(dWelcome, dSummer, dFlat, dNew, dBf));
-
-                // ════════════════════════════════════════════════════════════════════
-                // 11. SLOTS — đủ slots trong tương lai + một số BOOKED (quá khứ)
-                // ════════════════════════════════════════════════════════════════════
+                // ════════════════════════════════════════════════════════════════
+                // 9. SLOTS (ALL AVAILABLE — future dates)
+                // ════════════════════════════════════════════════════════════════
                 LocalDate today = LocalDate.now();
-                List<Slot> slots = List.of(
-                                // Duc (mDuc)
-                                slot(mDuc, today.plusDays(1), "09:00", "10:00", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(1), "14:00", "15:30", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(3), "09:00", "10:00", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(3), "15:00", "16:30", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(5), "10:00", "11:30", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(7), "09:00", "10:00", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(9), "14:00", "15:30", SlotStatusEnum.AVAILABLE),
-                                slot(mDuc, today.plusDays(12), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
-                                // Hoa (mHoa)
-                                slot(mHoa, today.plusDays(2), "08:00", "09:00", SlotStatusEnum.AVAILABLE),
-                                slot(mHoa, today.plusDays(2), "19:00", "20:00", SlotStatusEnum.AVAILABLE),
-                                slot(mHoa, today.plusDays(4), "08:00", "09:30", SlotStatusEnum.AVAILABLE),
-                                slot(mHoa, today.plusDays(6), "08:00", "09:00", SlotStatusEnum.AVAILABLE),
-                                slot(mHoa, today.plusDays(9), "19:00", "20:00", SlotStatusEnum.AVAILABLE),
-                                slot(mHoa, today.plusDays(11), "08:00", "09:30", SlotStatusEnum.AVAILABLE),
-                                // Thanh (mThanh) — Singapore, buổi tối VN
-                                slot(mThanh, today.plusDays(1), "20:00", "21:00", SlotStatusEnum.AVAILABLE),
-                                slot(mThanh, today.plusDays(6), "20:00", "21:30", SlotStatusEnum.AVAILABLE),
-                                slot(mThanh, today.plusDays(5), "19:30", "20:30", SlotStatusEnum.AVAILABLE),
-                                slot(mThanh, today.plusDays(8), "20:00", "21:00", SlotStatusEnum.AVAILABLE),
-                                slot(mThanh, today.plusDays(11), "20:00", "21:30", SlotStatusEnum.AVAILABLE),
-                                // Linh (mLinh) — US, sáng sớm VN
-                                slot(mLinh, today.plusDays(5), "07:00", "08:30", SlotStatusEnum.AVAILABLE),
-                                slot(mLinh, today.plusDays(4), "07:00", "08:30", SlotStatusEnum.AVAILABLE),
-                                slot(mLinh, today.plusDays(6), "06:30", "08:00", SlotStatusEnum.AVAILABLE),
-                                slot(mLinh, today.plusDays(10), "07:00", "08:30", SlotStatusEnum.AVAILABLE),
-                                slot(mLinh, today.plusDays(13), "07:00", "08:30", SlotStatusEnum.AVAILABLE),
-                                // Son (mSon) — Japan
-                                slot(mSon, today.plusDays(1), "21:00", "22:00", SlotStatusEnum.AVAILABLE),
-                                slot(mSon, today.plusDays(4), "21:00", "22:30", SlotStatusEnum.AVAILABLE),
-                                slot(mSon, today.plusDays(7), "21:00", "22:00", SlotStatusEnum.AVAILABLE),
-                                slot(mSon, today.plusDays(11), "21:00", "22:30", SlotStatusEnum.AVAILABLE),
-                                // BOOKED slots — dùng cho completed meetings (quá khứ)
-                                slot(mDuc, today.minusDays(5), "09:00", "10:00", SlotStatusEnum.BOOKED),
-                                slot(mHoa, today.minusDays(3), "08:00", "09:30", SlotStatusEnum.BOOKED),
-                                // BOOKED slots — dùng cho upcoming meetings (tương lai)
-                                slot(mLinh, today.plusDays(2), "07:00", "08:30", SlotStatusEnum.BOOKED),
-                                slot(mThanh, today.plusDays(3), "20:00", "21:00", SlotStatusEnum.BOOKED));
-                slotRepository.saveAll(slots);
+                slotRepository.saveAll(List.of(
+                                // Alex (PST) — Mon/Wed/Fri
+                                slot(mAlex, today.plusDays(1), "09:00", "09:30", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(1), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(1), "14:00", "14:30", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(3), "09:00", "09:30", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(3), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(5), "14:00", "15:00", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(7), "09:00", "10:00", SlotStatusEnum.AVAILABLE),
+                                slot(mAlex, today.plusDays(8), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                // Sophia (CET) — Tue/Thu/Sat
+                                slot(mSophia, today.plusDays(2), "13:00", "13:30", SlotStatusEnum.AVAILABLE),
+                                slot(mSophia, today.plusDays(2), "15:00", "16:00", SlotStatusEnum.AVAILABLE),
+                                slot(mSophia, today.plusDays(4), "13:00", "13:30", SlotStatusEnum.AVAILABLE),
+                                slot(mSophia, today.plusDays(4), "15:00", "16:00", SlotStatusEnum.AVAILABLE),
+                                slot(mSophia, today.plusDays(6), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mSophia, today.plusDays(9), "13:00", "14:00", SlotStatusEnum.AVAILABLE),
+                                // Raj (IST) — Mon/Wed
+                                slot(mRaj, today.plusDays(1), "16:00", "16:30", SlotStatusEnum.AVAILABLE),
+                                slot(mRaj, today.plusDays(1), "17:00", "18:00", SlotStatusEnum.AVAILABLE),
+                                slot(mRaj, today.plusDays(3), "16:00", "16:30", SlotStatusEnum.AVAILABLE),
+                                slot(mRaj, today.plusDays(3), "17:00", "18:00", SlotStatusEnum.AVAILABLE),
+                                slot(mRaj, today.plusDays(8), "16:00", "17:00", SlotStatusEnum.AVAILABLE),
+                                // Emma (CET) — Fri/Sat
+                                slot(mEmma, today.plusDays(5), "09:00", "09:30", SlotStatusEnum.AVAILABLE),
+                                slot(mEmma, today.plusDays(5), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                slot(mEmma, today.plusDays(6), "09:00", "09:30", SlotStatusEnum.AVAILABLE),
+                                slot(mEmma, today.plusDays(6), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                slot(mEmma, today.plusDays(12), "09:00", "10:00", SlotStatusEnum.AVAILABLE)));
 
-                // Lấy các BOOKED slots (4 cuối) để tạo booking/meeting
-                Slot slotDucPast = slots.get(28);
-                Slot slotHoaPast = slots.get(29);
-                Slot slotLinhFuture = slots.get(30);
-                Slot slotThanhFuture = slots.get(31);
+                // ════════════════════════════════════════════════════════════════
+                // ── BATCH 2: 4 thêm mentors ──────────────────────────────────
+                // ════════════════════════════════════════════════════════════════
 
-                // ════════════════════════════════════════════════════════════════════
-                // 12. PLAN REGISTRATIONS → BOOKINGS → INVOICES → MEETINGS
-                // Use case 1: Lan đã học Java với Duc (COMPLETED)
-                // ════════════════════════════════════════════════════════════════════
-                PlanRegistration reg1 = new PlanRegistration();
-                reg1.setMessage("Tôi muốn nắm vững Java OOP. Hiện ở level fresher 6 tháng kinh nghiệm.");
-                reg1.setDiscount(dWelcome);
-                reg1 = planRegistrationRepository.save(reg1);
+                // New companies & job titles
+                Company coApple = company("Apple");
+                Company coUber = company("Uber");
+                Company coMicrosoft = company("Microsoft");
+                Company coAdobe = company("Adobe");
+                Company coNotion = company("Notion");
+                Company coAirbnb = company("Airbnb");
+                Company coNetflix = company("Netflix");
+                Company coLinkedIn = company("LinkedIn");
+                companyRepository.saveAll(
+                                List.of(coApple, coUber, coMicrosoft, coAdobe, coNotion, coAirbnb, coNetflix,
+                                                coLinkedIn));
 
-                Booking bk1 = new Booking();
-                bk1.setMentee(menLan);
-                bk1.setPlan(ps1);
-                bk1.setPlanRegistration(reg1);
-                bk1.setStatus(BookingStatusEnum.COMPLETED);
-                bookingRepository.save(bk1);
+                JobTitle jtPrincipal = jobTitle("Principal Engineer");
+                JobTitle jtStaff = jobTitle("Staff Engineer");
+                JobTitle jtVPE = jobTitle("VP of Engineering");
+                JobTitle jtHeadDesign = jobTitle("Head of Design");
+                jobTitleRepository.saveAll(List.of(jtPrincipal, jtStaff, jtVPE, jtHeadDesign));
 
-                Invoice inv1 = new Invoice();
-                inv1.setPlanRegistration(reg1);
-                inv1.setMentee(menLan);
-                inv1.setPaymentStatus(PaymentStatusEnum.PAID);
-                inv1.setAmountSubtotal(new BigDecimal("150000"));
-                inv1.setAmountTotal(new BigDecimal("135000")); // WELCOME10 -10%
-                inv1.setPaidTime(Instant.now().minusSeconds(86400 * 4)); // 4 ngày trước
-                inv1.setNote("Áp dụng WELCOME10 (-10%)");
-                inv1 = invoiceRepository.save(inv1);
+                // New skills
+                Skill sVue = skill("Vue.js");
+                Skill sNextJS = skill("Next.js");
+                Skill sGo = skill("Go");
+                Skill sAzure = skill("Azure");
+                Skill sGCP = skill("GCP");
+                Skill sTerraform = skill("Terraform");
+                Skill sKafka = skill("Kafka");
+                Skill sRedis = skill("Redis");
+                skillRepository.saveAll(List.of(sVue, sNextJS, sGo, sAzure, sGCP, sTerraform, sKafka, sRedis));
 
-                Meeting mt1 = new Meeting();
-                mt1.setInvoice(inv1);
-                mt1.setSlot(slotDucPast);
-                mt1.setStatus(MeetingStatusEnum.COMPLETED);
-                mt1.setLocation("https://meet.google.com/abc-defg-hij");
-                mt1.setDate(slotDucPast.getDate());
-                mt1.setStartTime(slotDucPast.getStartTime());
-                mt1.setEndTime(slotDucPast.getEndTime());
-                meetingRepository.save(mt1);
+                // New sub-categories
+                Category cFullstack = cat("Full-stack Development", cTech);
+                Category cFintech = cat("Fintech", cBiz);
+                categoryRepository.saveAll(List.of(cFullstack, cFintech));
+                cFullstack.setSkills(new ArrayList<>(List.of(sNode, sReact, sNextJS, sVue, sPostgres, sRedis)));
+                cFintech.setSkills(new ArrayList<>(List.of(sPM, sGo)));
+                categoryRepository.saveAll(List.of(cFullstack, cFintech));
+                cInfra.setSkills(new ArrayList<>(List.of(sDocker, sK8s, sAWS, sAzure, sGCP, sTerraform)));
+                categoryRepository.save(cInfra);
 
-                Feedback fb1 = new Feedback();
-                fb1.setPlanRegistration(reg1);
-                fb1.setStars(5);
-                fb1.setContent(
-                                "Anh Đức giải thích rất rõ ràng và kiên nhẫn. Sau buổi học tôi đã hiểu rõ hơn về Java Collections. Highly recommend!");
-                feedbackRepository.save(fb1);
+                // Users
+                User uMarcus = user("Marcus", "Johnson", "marcus.johnson@mentora.com", pw,
+                                "United States", "America/New_York", GenderEnum.MALE, RoleEnum.MENTOR);
+                User uPriya = user("Priya", "Sharma", "priya.sharma@mentora.com", pw,
+                                "Singapore", "Asia/Singapore", GenderEnum.FEMALE, RoleEnum.MENTOR);
+                User uLeo = user("Leo", "Wang", "leo.wang@mentora.com", pw,
+                                "Canada", "America/Toronto", GenderEnum.MALE, RoleEnum.MENTOR);
+                User uIsabel = user("Isabel", "Costa", "isabel.costa@mentora.com", pw,
+                                "Portugal", "Europe/Lisbon", GenderEnum.FEMALE, RoleEnum.MENTOR);
+                userRepository.saveAll(List.of(uMarcus, uPriya, uLeo, uIsabel));
 
-                // ── Use case 2: Hien đã học Python với Hoa (COMPLETED) ───────────
-                PlanRegistration reg2 = new PlanRegistration();
-                reg2.setMessage("Cần học Python từ đầu để chuyển sang Data Science.");
-                reg2.setDiscount(dFlat);
-                reg2 = planRegistrationRepository.save(reg2);
+                // New mentees
+                User uAnna = user("Anna", "Schmidt", "anna.schmidt@mentora.com", pw,
+                                "Germany", "Europe/Berlin", GenderEnum.FEMALE, RoleEnum.MENTEE);
+                User uMohammed = user("Mohammed", "Al-Hassan", "m.alhassan@mentora.com", pw,
+                                "United Arab Emirates", "Asia/Dubai", GenderEnum.MALE, RoleEnum.MENTEE);
+                User uSeo = user("Seo-yeon", "Park", "seoyeon.park@mentora.com", pw,
+                                "South Korea", "Asia/Seoul", GenderEnum.FEMALE, RoleEnum.MENTEE);
+                userRepository.saveAll(List.of(uAnna, uMohammed, uSeo));
 
-                Booking bk2 = new Booking();
-                bk2.setMentee(menHien);
-                bk2.setPlan(ps3);
-                bk2.setPlanRegistration(reg2);
-                bk2.setStatus(BookingStatusEnum.COMPLETED);
-                bookingRepository.save(bk2);
+                // Mentor objects
+                Mentor mMarcus = mentor(uMarcus,
+                                "Senior iOS/Flutter engineer with 9 years building apps used by 50M+ users. " +
+                                                "Former Apple engineer. Expert in SwiftUI, Flutter performance optimization, and app architecture.",
+                                "Mobile Engineering Expert | Senior iOS @ Uber (ex-Apple)",
+                                ResponseTimeEnum.WITHIN_1_DAY,
+                                List.of(sSwift, sFlutter, sGit, sReact),
+                                List.of("English"));
 
-                Invoice inv2 = new Invoice();
-                inv2.setPlanRegistration(reg2);
-                inv2.setMentee(menHien);
-                inv2.setPaymentStatus(PaymentStatusEnum.PAID);
-                inv2.setAmountSubtotal(new BigDecimal("180000"));
-                inv2.setAmountTotal(new BigDecimal("130000")); // FLAT50K -50k
-                inv2.setPaidTime(Instant.now().minusSeconds(86400 * 2));
-                inv2.setNote("Áp dụng FLAT50K (-50,000 VND)");
-                inv2 = invoiceRepository.save(inv2);
+                Mentor mPriya = mentor(uPriya,
+                                "Product leader with 8 years in Southeast Asia's tech scene. " +
+                                                "Shipped products at Grab and Airbnb used by millions across APAC. " +
+                                                "Specialist in 0-to-1 product development and growth strategies.",
+                                "Senior Product Manager | PM @ Airbnb (ex-Grab)",
+                                ResponseTimeEnum.WITHIN_12_HOURS,
+                                List.of(sPM, sDataAn, sFigma),
+                                List.of("English", "Hindi", "Bahasa Indonesia"));
 
-                Meeting mt2 = new Meeting();
-                mt2.setInvoice(inv2);
-                mt2.setSlot(slotHoaPast);
-                mt2.setStatus(MeetingStatusEnum.COMPLETED);
-                mt2.setLocation("https://meet.google.com/xyz-uvwx-yzp");
-                mt2.setDate(slotHoaPast.getDate());
-                mt2.setStartTime(slotHoaPast.getStartTime());
-                mt2.setEndTime(slotHoaPast.getEndTime());
-                meetingRepository.save(mt2);
+                Mentor mLeo = mentor(uLeo,
+                                "Principal Engineer at Microsoft with deep expertise in full-stack development. " +
+                                                "Built scalable Node.js microservices handling 100k+ req/s. " +
+                                                "Open-source contributor and technical blogger.",
+                                "Principal Full-stack Engineer | Node.js & React Expert @ Microsoft",
+                                ResponseTimeEnum.WITHIN_1_DAY,
+                                List.of(sNode, sReact, sTS, sNextJS, sPostgres, sRedis, sKafka, sGit),
+                                List.of("English", "Mandarin"));
 
-                Feedback fb2 = new Feedback();
-                fb2.setPlanRegistration(reg2);
-                fb2.setStars(4);
-                fb2.setContent(
-                                "Chị Hoa hướng dẫn rất tận tình. Tôi đã biết cách dùng Pandas phân tích dữ liệu. Chỉ mong buổi học dài hơn một chút.");
-                feedbackRepository.save(fb2);
+                Mentor mIsabel = mentor(uIsabel,
+                                "Head of Design at Notion with 10 years of UX/UI experience. " +
+                                                "Previously design lead at Adobe. " +
+                                                "Passionate about design systems, accessibility, and the intersection of design and engineering.",
+                                "Head of Design | UX Expert & Design Systems @ Notion (ex-Adobe)",
+                                ResponseTimeEnum.MORE_THAN_2_DAYS,
+                                List.of(sFigma, sPM, sTS),
+                                List.of("English", "Portuguese", "Spanish"));
 
-                // ── Use case 3: Nam sắp học System Design với Linh (SCHEDULED) ────
-                PlanRegistration reg3 = new PlanRegistration();
-                reg3.setMessage("Chuẩn bị phỏng vấn Shopee/Sea Group trong 2 tháng tới.");
-                reg3.setDiscount(null);
-                reg3 = planRegistrationRepository.save(reg3);
+                mentorRepository.saveAll(List.of(mMarcus, mPriya, mLeo, mIsabel));
 
-                Booking bk3 = new Booking();
-                bk3.setMentee(menNam);
-                bk3.setPlan(ps7);
-                bk3.setPlanRegistration(reg3);
-                bk3.setStatus(BookingStatusEnum.CONFIRMED);
-                bookingRepository.save(bk3);
+                // New mentees
+                Mentee meAnna = mentee(uAnna, "Improving React skills and transitioning from Angular to build modern SPAs");
+                Mentee meMohammed = mentee(uMohammed, "Breaking into product management from a software engineering background");
+                Mentee meSeo = mentee(uSeo, "Learning mobile development with Flutter to build my startup idea");
+                menteeRepository.saveAll(List.of(meAnna, meMohammed, meSeo));
 
-                Invoice inv3 = new Invoice();
-                inv3.setPlanRegistration(reg3);
-                inv3.setMentee(menNam);
-                inv3.setPaymentStatus(PaymentStatusEnum.PENDING);
-                inv3.setAmountSubtotal(new BigDecimal("350000"));
-                inv3.setAmountTotal(new BigDecimal("350000"));
-                inv3 = invoiceRepository.save(inv3);
+                // Work experience (batch 2)
+                workForRepository.saveAll(List.of(
+                                // Marcus: Apple → Uber (current)
+                                workFor(mMarcus, coApple, jtSSE, "2015-08-01", "2022-01-31"),
+                                workForCurrent(mMarcus, coUber, jtSSE, "2022-02-01"),
+                                // Priya: Grab PM → Airbnb PM (current)
+                                workFor(mPriya, coGrab, jtPM, "2016-05-01", "2021-11-30"),
+                                workForCurrent(mPriya, coAirbnb, jtPM, "2022-01-01"),
+                                // Leo: Netflix SE → Microsoft Principal (current)
+                                workFor(mLeo, coNetflix, jtSE, "2017-03-01", "2020-09-30"),
+                                workForCurrent(mLeo, coMicrosoft, jtPrincipal, "2023-02-01"),
+                                // Isabel: Adobe → Notion Head of Design (current)
+                                workFor(mIsabel, coAdobe, jtUX, "2014-06-01", "2022-06-30"),
+                                workForCurrent(mIsabel, coNotion, jtHeadDesign, "2022-07-01")));
 
-                Meeting mt3 = new Meeting();
-                mt3.setInvoice(inv3);
-                mt3.setSlot(slotLinhFuture);
-                mt3.setStatus(MeetingStatusEnum.SCHEDULED);
-                mt3.setLocation("https://zoom.us/j/123456789?pwd=mentora2026");
-                mt3.setDate(slotLinhFuture.getDate());
-                mt3.setStartTime(slotLinhFuture.getStartTime());
-                mt3.setEndTime(slotLinhFuture.getEndTime());
-                meetingRepository.save(mt3);
+                // Plans (batch 2)
+                planSessionRepository.saveAll(List.of(
+                                // Marcus
+                                session(mMarcus, "Swift Code Review",
+                                                "30-min review of your Swift/SwiftUI code: architecture, performance, and App Store best practices.",
+                                                25, 30),
+                                session(mMarcus, "Flutter App Architecture",
+                                                "60-min session on Flutter architecture patterns, state management, and performance tuning.",
+                                                45, 60),
+                                // Priya
+                                session(mPriya, "PM Career Switch Coaching",
+                                                "30-min coaching for engineers transitioning to product management.", 30, 30),
+                                session(mPriya, "Product Strategy Workshop",
+                                                "60-min deep dive into product roadmapping, prioritization frameworks, and stakeholder management.",
+                                                55, 60),
+                                // Leo
+                                session(mLeo, "Node.js Performance Review",
+                                                "30-min profiling and optimization session for your Node.js application.", 25, 30),
+                                session(mLeo, "Full-stack System Design",
+                                                "60-min system design session: from database schema to API design to frontend architecture.",
+                                                50, 60),
+                                // Isabel
+                                session(mIsabel, "UX Portfolio Review",
+                                                "30-min critique of your UX portfolio with actionable feedback to land your next role.", 30, 30),
+                                session(mIsabel, "Design System Workshop",
+                                                "60-min hands-on session building or improving your Figma design system.", 55, 60)));
 
-                // ── Use case 4: Mai sắp học React với Thanh (PENDING — chờ link) ──
-                PlanRegistration reg4 = new PlanRegistration();
-                reg4.setMessage("Muốn deploy React app lên AWS cho dự án freelance.");
-                reg4.setDiscount(null);
-                reg4 = planRegistrationRepository.save(reg4);
+                // Slots (batch 2)
+                slotRepository.saveAll(List.of(
+                                // Marcus (EST) — Tue/Thu
+                                slot(mMarcus, today.plusDays(2), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mMarcus, today.plusDays(2), "11:00", "12:00", SlotStatusEnum.AVAILABLE),
+                                slot(mMarcus, today.plusDays(4), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mMarcus, today.plusDays(4), "11:00", "12:00", SlotStatusEnum.AVAILABLE),
+                                slot(mMarcus, today.plusDays(7), "14:00", "14:30", SlotStatusEnum.AVAILABLE),
+                                slot(mMarcus, today.plusDays(11), "10:00", "11:00", SlotStatusEnum.AVAILABLE),
+                                // Priya (SGT) — Mon/Wed/Fri
+                                slot(mPriya, today.plusDays(1), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mPriya, today.plusDays(1), "11:00", "12:00", SlotStatusEnum.AVAILABLE),
+                                slot(mPriya, today.plusDays(3), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mPriya, today.plusDays(3), "11:00", "12:00", SlotStatusEnum.AVAILABLE),
+                                slot(mPriya, today.plusDays(5), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mPriya, today.plusDays(10), "11:00", "12:00", SlotStatusEnum.AVAILABLE),
+                                // Leo (EST) — Mon/Thu
+                                slot(mLeo, today.plusDays(1), "18:00", "18:30", SlotStatusEnum.AVAILABLE),
+                                slot(mLeo, today.plusDays(1), "19:00", "20:00", SlotStatusEnum.AVAILABLE),
+                                slot(mLeo, today.plusDays(4), "18:00", "18:30", SlotStatusEnum.AVAILABLE),
+                                slot(mLeo, today.plusDays(4), "19:00", "20:00", SlotStatusEnum.AVAILABLE),
+                                slot(mLeo, today.plusDays(8), "18:00", "19:00", SlotStatusEnum.AVAILABLE),
+                                slot(mLeo, today.plusDays(11), "18:00", "18:30", SlotStatusEnum.AVAILABLE),
+                                // Isabel (WET) — Wed/Fri/Sat
+                                slot(mIsabel, today.plusDays(3), "14:00", "14:30", SlotStatusEnum.AVAILABLE),
+                                slot(mIsabel, today.plusDays(3), "15:00", "16:00", SlotStatusEnum.AVAILABLE),
+                                slot(mIsabel, today.plusDays(5), "14:00", "14:30", SlotStatusEnum.AVAILABLE),
+                                slot(mIsabel, today.plusDays(5), "15:00", "16:00", SlotStatusEnum.AVAILABLE),
+                                slot(mIsabel, today.plusDays(6), "10:00", "10:30", SlotStatusEnum.AVAILABLE),
+                                slot(mIsabel, today.plusDays(13), "14:00", "15:00", SlotStatusEnum.AVAILABLE)));
 
-                Booking bk4 = new Booking();
-                bk4.setMentee(menMai);
-                bk4.setPlan(ps5);
-                bk4.setPlanRegistration(reg4);
-                bk4.setStatus(BookingStatusEnum.CONFIRMED);
-                bookingRepository.save(bk4);
+                // ════════════════════════════════════════════════════════════════
+                // 10. DISCOUNTS
+                // ════════════════════════════════════════════════════════════════
+                Discount dWelcome = new Discount();
+                dWelcome.setDiscountName("WELCOME10");
+                dWelcome.setDiscountType(DiscountTypeEnum.PERCENTAGE);
+                dWelcome.setDiscountValue(BigDecimal.valueOf(10));
+                dWelcome.setStartDate(LocalDate.now());
+                dWelcome.setEndDate(LocalDate.now().plusDays(90));
+                dWelcome.setActive(true);
+                dWelcome.setUsageLimit(100);
+                dWelcome.setUsedCount(0);
 
-                Invoice inv4 = new Invoice();
-                inv4.setPlanRegistration(reg4);
-                inv4.setMentee(menMai);
-                inv4.setPaymentStatus(PaymentStatusEnum.PENDING);
-                inv4.setAmountSubtotal(new BigDecimal("200000"));
-                inv4.setAmountTotal(new BigDecimal("200000"));
-                inv4 = invoiceRepository.save(inv4);
+                Discount dSummer = new Discount();
+                dSummer.setDiscountName("SUMMER25");
+                dSummer.setDiscountType(DiscountTypeEnum.PERCENTAGE);
+                dSummer.setDiscountValue(BigDecimal.valueOf(25));
+                dSummer.setStartDate(LocalDate.of(2026, 6, 1));
+                dSummer.setEndDate(LocalDate.of(2026, 8, 31));
+                dSummer.setActive(true);
+                dSummer.setUsageLimit(50);
+                dSummer.setUsedCount(0);
 
-                Meeting mt4 = new Meeting();
-                mt4.setInvoice(inv4);
-                mt4.setSlot(slotThanhFuture);
-                mt4.setStatus(MeetingStatusEnum.PENDING); // Thanh chưa add link
-                mt4.setLocation(null);
-                mt4.setDate(slotThanhFuture.getDate());
-                mt4.setStartTime(slotThanhFuture.getStartTime());
-                mt4.setEndTime(slotThanhFuture.getEndTime());
-                meetingRepository.save(mt4);
+                Discount dFlat = new Discount();
+                dFlat.setDiscountName("FLAT10");
+                dFlat.setDiscountType(DiscountTypeEnum.FIXED_AMOUNT);
+                dFlat.setDiscountValue(BigDecimal.valueOf(10));
+                dFlat.setStartDate(LocalDate.now());
+                dFlat.setEndDate(LocalDate.now().plusDays(60));
+                dFlat.setActive(true);
+                dFlat.setUsageLimit(200);
+                dFlat.setUsedCount(0);
 
-                System.out.println(">>> [DataInitializer] ✅ Seed hoàn tất!");
-                System.out.println(">>> Accounts (password: Abc@12345):");
-                System.out.println(">>>   ADMIN  : admin@mentora.vn");
+                discountRepository.saveAll(List.of(dWelcome, dSummer, dFlat));
+
                 System.out.println(
-                                ">>>   MENTOR  : duc.nguyen@mentor.vn | hoa.tran@mentor.vn | thanh.le@mentor.vn | linh.pham@mentor.vn | son.vo@mentor.vn");
-                System.out.println(
-                                ">>>   MENTEE  : lan.bui@mentee.vn | nam.hoang@mentee.vn | hien.nguyen@mentee.vn | hung.do@mentee.vn | mai.dang@mentee.vn");
+                                ">>> [DataInitializer] ✅ Done! 8 mentors, 6 mentees, 16 plans, 49 slots, 3 discounts seeded.");
+                } catch (Exception e) {
+                        System.err.println(">>> [DataInitializer] ❌ FAILED! Root cause: " + e.getMessage());
+                        Throwable cause = e.getCause();
+                        while (cause != null) {
+                                System.err.println(">>> [DataInitializer]   Caused by: " + cause.getMessage());
+                                cause = cause.getCause();
+                        }
+                        throw e;
+                }
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // Helper methods
-        // ════════════════════════════════════════════════════════════════════════
 
-        private User makeUser(String first, String last, String email, String pw,
-                        RoleEnum role, String country, String tz,
-                        GenderEnum gender, UserStatusEnum status) {
+        // ══════════════════════════════════════════════════════════════════════
+        // HELPER METHODS
+        // ══════════════════════════════════════════════════════════════════════
+
+        private User user(String first, String last, String email, String pw,
+                        String country, String timezone, GenderEnum gender, RoleEnum role) {
                 User u = new User();
                 u.setFirstName(first);
                 u.setLastName(last);
                 u.setEmail(email);
                 u.setPassword(pw);
-                u.setRole(role);
                 u.setCountry(country);
-                u.setTimezone(tz);
+                u.setTimezone(timezone);
                 u.setGender(gender);
-                u.setStatus(status);
+                u.setRole(role);
+                u.setStatus(UserStatusEnum.ACTIVE);
                 u.setEmailVerified(true);
-                u.setCreatedAt(Instant.now());
                 return u;
         }
 
-        private Skill skill(String name) {
-                Skill s = new Skill();
-                s.setSkillName(name);
-                return s;
-        }
-
-        private Category cat(String name, Category parent, List<Skill> skills) {
-                Category c = new Category();
-                c.setCategoryName(name);
-                c.setParent(parent);
-                c.setSkills(skills);
-                return c;
+        private Mentor mentor(User user, String bio, String headline,
+                        ResponseTimeEnum responseTime, List<Skill> skills, List<String> languages) {
+                Mentor m = new Mentor();
+                m.setUser(user);
+                m.setBio(bio);
+                m.setHeadline(headline);
+                m.setResponseTime(responseTime);
+                m.setTotalMeetings(0);
+                m.setTotalStars(0);
+                m.setTotalReviews(0);
+                m.setStripeOnboarded(false);
+                m.setSkills(skills);
+                m.setLanguages(languages);
+                return m;
         }
 
         private Mentee mentee(User user, String goal) {
@@ -638,6 +595,19 @@ public class DataInitializer implements CommandLineRunner {
                 return m;
         }
 
+        private Category cat(String name, Category parent) {
+                Category c = new Category();
+                c.setCategoryName(name);
+                c.setParent(parent);
+                return c;
+        }
+
+        private Skill skill(String name) {
+                Skill s = new Skill();
+                s.setSkillName(name);
+                return s;
+        }
+
         private Company company(String name) {
                 Company c = new Company();
                 c.setCompanyName(name);
@@ -645,75 +615,47 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         private JobTitle jobTitle(String name) {
-                JobTitle jt = new JobTitle();
-                jt.setJobTitleName(name);
-                return jt;
+                JobTitle j = new JobTitle();
+                j.setJobTitleName(name);
+                return j;
         }
 
-        private WorkFor workFor(Mentor mentor, Company company, JobTitle jobTitle,
-                        String startDate, String endDate, boolean isCurrent) {
-                WorkFor wf = new WorkFor();
-                wf.setId(new WorkForId(mentor.getMentorId(), company.getCompanyId()));
-                wf.setMentor(mentor);
-                wf.setCompany(company);
-                wf.setJobTitle(jobTitle);
-                wf.setStartDate(startDate != null ? LocalDate.parse(startDate) : null);
-                wf.setEndDate(endDate != null ? LocalDate.parse(endDate) : null);
-                wf.setCurrent(isCurrent);
-                return wf;
+        private WorkFor workFor(Mentor mentor, Company company, JobTitle jt, String start, String end) {
+                WorkFor w = new WorkFor();
+                w.setId(new WorkForId(mentor.getMentorId(), company.getCompanyId()));
+                w.setMentor(mentor);
+                w.setCompany(company);
+                w.setJobTitle(jt);
+                w.setStartDate(LocalDate.parse(start));
+                w.setEndDate(LocalDate.parse(end));
+                w.setCurrent(false);
+                return w;
         }
 
-        private PlanSession planSession(Mentor mentor, String name, int duration,
-                        long chargeVnd, String desc) {
-                PlanSession ps = new PlanSession();
-                ps.setMentor(mentor);
-                ps.setSessionName(name);
-                ps.setSessionsDuration(duration);
-                ps.setCharge(new BigDecimal(chargeVnd));
-                ps.setDescription(desc);
-                ps.setStatus(PlanStatusEnum.ACTIVE);
-                return ps;
+        private WorkFor workForCurrent(Mentor mentor, Company company, JobTitle jt, String start) {
+                WorkFor w = new WorkFor();
+                w.setId(new WorkForId(mentor.getMentorId(), company.getCompanyId()));
+                w.setMentor(mentor);
+                w.setCompany(company);
+                w.setJobTitle(jt);
+                w.setStartDate(LocalDate.parse(start));
+                w.setEndDate(null);
+                w.setCurrent(true);
+                return w;
         }
 
-        private PlanMentorship planMentorship(Mentor mentor, String name, int callsPerMonth,
-                        int minutesPerCall, long chargeVnd,
-                        String desc, List<String> benefits) {
-                PlanMentorship pm = new PlanMentorship();
-                pm.setMentor(mentor);
-                pm.setPlanName(name);
-                pm.setCallsPerMonth(callsPerMonth);
-                pm.setMinutesPerCall(minutesPerCall);
-                pm.setCharge(new BigDecimal(chargeVnd));
-                pm.setDescription(desc);
-                pm.setStatus(PlanStatusEnum.ACTIVE);
-
-                for (int i = 0; i < benefits.size(); i++) {
-                        MentorshipsBenefit b = new MentorshipsBenefit();
-                        b.setId(new MentorshipsBenefitId(null, i + 1)); // planId sẽ được fill sau khi save
-                        b.setPlanMentorship(pm);
-                        b.setBenefitContent(benefits.get(i));
-                        pm.getBenefits().add(b);
-                }
-                return pm;
+        private PlanSession session(Mentor mentor, String name, String desc, double charge, int duration) {
+                PlanSession p = new PlanSession();
+                p.setMentor(mentor);
+                p.setSessionName(name);
+                p.setDescription(desc);
+                p.setCharge(BigDecimal.valueOf(charge));
+                p.setStatus(PlanStatusEnum.ACTIVE);
+                p.setSessionsDuration(duration);
+                return p;
         }
 
-        private Discount discount(String name, DiscountTypeEnum type, long value,
-                        String start, String end, boolean active,
-                        int limit, int used) {
-                Discount d = new Discount();
-                d.setDiscountName(name);
-                d.setDiscountType(type);
-                d.setDiscountValue(new BigDecimal(value));
-                d.setStartDate(LocalDate.parse(start));
-                d.setEndDate(LocalDate.parse(end));
-                d.setActive(active);
-                d.setUsageLimit(limit);
-                d.setUsedCount(used);
-                return d;
-        }
-
-        private Slot slot(Mentor mentor, LocalDate date, String start, String end,
-                        SlotStatusEnum status) {
+        private Slot slot(Mentor mentor, LocalDate date, String start, String end, SlotStatusEnum status) {
                 Slot s = new Slot();
                 s.setMentor(mentor);
                 s.setDate(date);

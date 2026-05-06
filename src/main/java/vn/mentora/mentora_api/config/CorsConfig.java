@@ -20,7 +20,8 @@ public class CorsConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:4173",
-                "http://localhost:5173"));
+                "http://localhost:5173",
+                "https://mentora.tahidve.live"));
 
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS"));
