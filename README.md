@@ -20,7 +20,7 @@ This project originated as a group **Database Systems course assignment** at HCM
 - **Search & Filter:** Full-text mentor search with Turkraft Spring Filter library supporting dynamic query filters
 - **Email Notifications:** Transactional emails via Spring Mail
 - **Admin Module:** Dashboard stats, mentor approval/rejection, invoice management
-- **Production Deployment:** Containerized with Docker Compose, reverse proxied through Caddy with auto-HTTPS
+- **Production Deployment:** Containerized with Docker, reverse proxied through Caddy with auto-HTTPS
 
 ---
 
@@ -36,7 +36,7 @@ This project originated as a group **Database Systems course assignment** at HCM
 | Payment | Stripe Connect API |
 | Email | Spring Mail|
 | Search | Turkraft Spring Filter |
-| Deployment | Docker, Docker Compose, Caddy |
+| Deployment | Docker, Caddy |
 
 ---
 ## Running Locally
@@ -88,19 +88,6 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 
 API will be available at `http://localhost:8080`
-
----
-
-## Docker Deployment
-
-```bash
-# Build image
-docker build -t mentora-api .
-
-# Run with docker compose (full stack)
-cp .env.example .env  # Fill in your values
-docker compose up -d
-```
 
 ---
 
